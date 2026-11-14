@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeiyouToolbox.Models;
@@ -36,29 +37,15 @@ public sealed partial class OverviewViewModel : ObservableObject
         _host = host;
         _shell = shell;
 
+        // 先把 14 行占位（全部 "---"）建好，界面首帧就有完整结构。
+        RebuildFieldRows(DeviceInfo.Disconnected);
         RefreshHost();
-
-        // 构造时不阻塞 UI：首帧渲染后再探测设备。
-        // 注意用全限定名：本类里有名为 Task 的属性（由 _currentTask 生成），
-        // 未限定会解析到该属性上导致 CS1061。
-        _ = System.Threading.Tasks.Task.Run(async () =>
-        {
-            try
-            {
-                var info = await _devices.ProbeAsync().ConfigureAwait(false);
-                ApplyDevice(info);
-            }
-            catch
-            {
-                // 探测失败保持"未连接"，不影响启动。
-            }
-        });
     }
 
     // ---------------- 手机状态 ----------------
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StatusText), nameof(IsConnected), nameof(HasConnectionPath))]
+    [NotifyPropertyChangedFor(nameof(StatusText), nameof(IsConnected), nameof(HasConnectionPath), nameof(ConnectionPathText))]
     private DeviceInfo _device = DeviceInfo.Disconnected;
 
     public bool IsConnected => Device.IsConnected;
@@ -75,6 +62,14 @@ public sealed partial class OverviewViewModel : ObservableObject
     [ObservableProperty]
     private bool _isProbing;
 
+    /// <summary>
+    /// 在 UI 线程上刷新设备信息。
+    /// <para>
+    /// 注意：<see cref="DeviceFields"/> 绑定到界面，<b>只能在 UI 线程修改</b>。
+    /// 早期实现在构造里用 <c>Task.Run</c> 后台线程直接改集合，触发跨线程访问，
+    /// 表现为启动后弹出原生崩溃 0xe0434352、界面停在半截。
+    /// </para>
+    /// </summary>
     public async Task RefreshDeviceAsync(CancellationToken cancellationToken = default)
     {
         if (IsProbing)
@@ -85,8 +80,13 @@ public sealed partial class OverviewViewModel : ObservableObject
         IsProbing = true;
         try
         {
-            var info = await _devices.ProbeAsync(cancellationToken).ConfigureAwait(false);
+            // ConfigureAwait(true)：回到调用方（UI）线程上下文再更新绑定数据。
+            var info = await _devices.ProbeAsync(cancellationToken).ConfigureAwait(true);
             ApplyDevice(info);
+        }
+        catch
+        {
+            // 探测失败保持"未连接"，不影响界面。
         }
         finally
         {
@@ -97,6 +97,16 @@ public sealed partial class OverviewViewModel : ObservableObject
     private void ApplyDevice(DeviceInfo info)
     {
         Device = info;
+        RebuildFieldRows(info);
+    }
+
+    private void RebuildFieldRows(DeviceInfo info)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => RebuildFieldRows(info));
+            return;
+        }
 
         DeviceFields.Clear();
         foreach (var field in Enum.GetValues<DeviceField>())
@@ -107,7 +117,7 @@ public sealed partial class OverviewViewModel : ObservableObject
 
     [RelayCommand]
     private async Task RefreshDevice(CancellationToken cancellationToken) =>
-        await RefreshDeviceAsync(cancellationToken).ConfigureAwait(false);
+        await RefreshDeviceAsync(cancellationToken).ConfigureAwait(true);
 
     // ---------------- 电脑状态 ----------------
 
@@ -142,7 +152,16 @@ public sealed partial class OverviewViewModel : ObservableObject
         ? "---"
         : $"{Math.Clamp((int)Math.Round(CurrentTask.Percent), 0, 100)}%";
 
-    public void ReportTask(BackgroundTaskProgress progress) => CurrentTask = progress;
+    public void ReportTask(BackgroundTaskProgress progress)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => ReportTask(progress));
+            return;
+        }
+
+        CurrentTask = progress;
+    }
 
     // ---------------- 快捷打开 ----------------
 
