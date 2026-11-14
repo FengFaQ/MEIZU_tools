@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
+             xmlns:conv="using:MeiyouToolbox.Converters"
+             xmlns:views="using:MeiyouToolbox.Views"
+             xmlns:vm="using:MeiyouToolbox.ViewModels"
+             x:Class="MeiyouToolbox.Views.MainView"
+             x:DataType="vm:MainViewModel"
+             mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <conv:StatusDotConverter x:Key="StatusDotConverter" />
+    </UserControl.Resources>
+
+    <DockPanel ClipToBounds="True">
+
+        <!-- ============ 顶栏 ============ -->
+        <Border DockPanel.Dock="Top"
+                Height="44"
+                Padding="6,0"
+                Background="{DynamicResource ArcSurfaceBrush}"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource ArcBorderBrush}">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+
+                <!-- 侧栏展开 / 收起 -->
+                <Button Grid.Column="0" Classes="window-btn"
+                        Command="{Binding ToggleSidebarCommand}"
+                        ToolTip.Tip="显示 / 隐藏侧栏">
+                    <lucide:LucideIcon Kind="PanelLeft" Size="15" />
+                </Button>
+
+                <!-- 文件 / 更新 -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="6,0,0,0"
+                            VerticalAlignment="Center">
+                    <Button Classes="topbar-text" Content="文件" />
+                    <Button Classes="topbar-text" Content="更新" />
+                </StackPanel>
+
+                <!-- 中间留空：ArcWindow 标题栏的可拖动区域 -->
+                <Border Grid.Column="2" Background="Transparent" />
+
+                <!-- 最小化 / 最大化 / 关闭 -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2"
+                            VerticalAlignment="Center">
+                    <Button Classes="window-btn" Click="OnMinimize" ToolTip.Tip="最小化">
+                        <lucide:LucideIcon Kind="Minus" Size="14" />
+                    </Button>
+                    <Button Classes="window-btn" Click="OnToggleMaximize" ToolTip.Tip="最大化 / 还原">
+                        <lucide:LucideIcon Kind="Square" Size="11" />
+                    </Button>
+                    <Button Classes="window-btn window-btn-close" Click="OnClose" ToolTip.Tip="关闭">
+                        <lucide:LucideIcon Kind="X" Size="14" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============ 侧栏 ============ -->
+        <Border DockPanel.Dock="Left"
+                Width="192"
+                Background="{DynamicResource ArcSurfaceBrush}"
+                BorderThickness="0,0,1,0"
+                BorderBrush="{DynamicResource ArcBorderBrush}"
+                IsVisible="{Binding IsSidebarExpanded}">
+            <DockPanel LastChildFill="True">
+
+                <!-- 上方 4 项 -->
+                <StackPanel DockPanel.Dock="Top" Margin="8,12,8,0" Spacing="2">
+                    <RadioButton Classes="nav-item" GroupName="nav"
+                                 IsChecked="{Binding IsOverview, Mode=OneWay}"
+                                 Command="{Binding NavigateCommand}" CommandParameter="Overview">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <lucide:LucideIcon Kind="LayoutDashboard" Size="16" />
+                            <TextBlock Text="概览" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Classes="nav-item" GroupName="nav"
+                                 IsChecked="{Binding IsFlash, Mode=OneWay}"
+                                 Command="{Binding NavigateCommand}" CommandParameter="Flash">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <lucide:LucideIcon Kind="Zap" Size="16" />
+                            <TextBlock Text="刷机" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Classes="nav-item" GroupName="nav"
+                                 IsChecked="{Binding IsBackup, Mode=OneWay}"
+                                 Command="{Binding NavigateCommand}" CommandParameter="Backup">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <lucide:LucideIcon Kind="HardDriveDownload" Size="16" />
+                            <TextBlock Text="备份" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Classes="nav-item" GroupName="nav"
+                                 IsChecked="{Binding IsManage, Mode=OneWay}"
+                                 Command="{Binding NavigateCommand}" CommandParameter="Manage">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <lucide:LucideIcon Kind="Wrench" Size="16" />
+                            <TextBlock Text="管理" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+
+                <!-- 设置固定在最下方 -->
+                <RadioButton DockPanel.Dock="Bottom" Classes="nav-item" GroupName="nav"
+                             Margin="8,0,8,12"
+                             IsChecked="{Binding IsSettings, Mode=OneWay}"
+                             Command="{Binding NavigateCommand}" CommandParameter="Settings">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <lucide:LucideIcon Kind="Settings" Size="16" />
+                        <TextBlock Text="设置" VerticalAlignment="Center" />
+                    </StackPanel>
+                </RadioButton>
+
+                <!-- 中间留白，把上下两组岔开 -->
+                <Border />
+            </DockPanel>
+        </Border>
+
+        <!-- ============ 主窗口：页面宿主 ============
+             可见性绑定在 Border 上（DataContext 仍是 MainViewModel），
+             页面自身再声明自己的 DataContext，两者互不覆盖。 -->
+        <Grid>
+            <Border IsVisible="{Binding IsOverview}">
+                <views:OverviewView DataContext="{Binding Overview}" />
+            </Border>
+
+            <Border IsVisible="{Binding IsFlash}">
+                <views:PlaceholderView>
+                    <views:PlaceholderView.DataContext>
+                        <views:PlaceholderViewModel Title="刷机"
+                                                    Description="解锁 / 上锁 BL、Magisk Root、刷入 Recovery、9008 线刷完整包与任意分区写入。"
+                                                    IconKind="Zap" />
+                    </views:PlaceholderView.DataContext>
+                </views:PlaceholderView>
+            </Border>
+
+            <Border IsVisible="{Binding IsBackup}">
+                <views:PlaceholderView>
+                    <views:PlaceholderView.DataContext>
+                        <views:PlaceholderViewModel Title="备份"
+                                                    Description="全分区备份、任意分区回读、QCN 基带备份与恢复。"
+                                                    IconKind="HardDriveDownload" />
+                    </views:PlaceholderView.DataContext>
+                </views:PlaceholderView>
+            </Border>
+
+            <Border IsVisible="{Binding IsManage}">
+                <views:PlaceholderView>
+                    <views:PlaceholderView.DataContext>
+                        <views:PlaceholderViewModel Title="管理"
+                                                    Description="分区表读写、槽位管理、工具箱目录与日志查看。"
+                                                    IconKind="Wrench" />
+                    </views:PlaceholderView.DataContext>
+                </views:PlaceholderView>
+            </Border>
+
+            <Border IsVisible="{Binding IsSettings}">
+                <views:PlaceholderView>
+                    <views:PlaceholderView.DataContext>
+                        <views:PlaceholderViewModel Title="设置"
+                                                    Description="外观主题、工具路径、备份目录与行为偏好。"
+                                                    IconKind="Settings" />
+                    </views:PlaceholderView.DataContext>
+                </views:PlaceholderView>
+            </Border>
+        </Grid>
+    </DockPanel>
+</UserControl>

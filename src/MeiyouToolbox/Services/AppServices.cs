@@ -1,0 +1,32 @@
+using Microsoft.Extensions.DependencyInjection;
+using MeiyouToolbox.ViewModels;
+
+namespace MeiyouToolbox.Services;
+
+/// <summary>
+/// 应用的服务注册。所有注册都写出具体类型，容器不需要反射扫描程序集，
+/// 这样裁剪（trimming）与 NativeAOT 才能工作 —— 和 Arc 模板的做法一致。
+/// </summary>
+public static class AppServices
+{
+    public static IServiceProvider Build()
+    {
+        var services = new ServiceCollection();
+
+        // 基础设施
+        services.AddSingleton<IProcessRunner, ProcessRunner>();
+        services.AddSingleton<IToolLocator, ToolLocator>();
+        services.AddSingleton<IShellLauncher, ShellLauncher>();
+
+        // 业务服务
+        services.AddSingleton<IHostInfoService, HostInfoService>();
+        services.AddSingleton<IDeviceService, DeviceService>();
+
+        // 视图模型
+        services.AddSingleton<OverviewViewModel>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<MainViewModel>();
+
+        return services.BuildServiceProvider();
+    }
+}

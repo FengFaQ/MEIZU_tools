@@ -1,0 +1,70 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 顶栏文字按钮：文件 / 更新 -->
+    <Style Selector="Button.topbar-text">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.topbar-text:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+    </Style>
+
+    <!-- 窗口按钮 -->
+    <Style Selector="Button.window-btn">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.window-btn:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.window-btn-close:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#E81123" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+
+    <!-- 侧栏导航项 -->
+    <Style Selector="RadioButton.nav-item">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="FontSize" Value="13.5" />
+        <Setter Property="CornerRadius" Value="9" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource ArcForegroundBrush}" />
+    </Style>
+    <Style Selector="RadioButton.nav-item:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="RadioButton.nav-item:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ArcAccentSoftBrush}" />
+    </Style>
+
+    <!-- 快捷打开按钮 -->
+    <Style Selector="Button.quick">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="10,14" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ArcBorderBrush}" />
+    </Style>
+    <Style Selector="Button.quick:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ArcAccentSoftBrush}" />
+    </Style>
+
+</Styles>

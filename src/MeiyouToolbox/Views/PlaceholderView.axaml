@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
+             x:Class="MeiyouToolbox.Views.PlaceholderView">
+    <!-- 刷机 / 备份 / 管理三页在下一轮实现，先给出统一占位，保证导航可用。 -->
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+        <lucide:LucideIcon Kind="{Binding IconKind}" Size="40" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Description}" FontSize="13"
+                   Foreground="{DynamicResource ArcTextMutedBrush}"
+                   HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" />
+    </StackPanel>
+</UserControl>

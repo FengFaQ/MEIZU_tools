@@ -1,0 +1,19 @@
+## .NET
+bin/
+obj/
+publish/
+*.user
+*.suo
+
+## Rider / VS
+.idea/
+.vs/
+*.DotSettings.user
+
+## OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+## 工具目录（体积大，不入库；由 CI 或用户自行放置 adb/fastboot）
+src/MeiyouToolbox/Tools/

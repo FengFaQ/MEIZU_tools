@@ -1,0 +1,166 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build:
+    name: Build (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+
+      - name: Show SDK info
+        run: dotnet --info
+
+      - name: Restore
+        run: dotnet restore src/MeiyouToolbox/MeiyouToolbox.csproj
+
+      - name: Build
+        run: dotnet build src/MeiyouToolbox/MeiyouToolbox.csproj -c Release --no-restore
+
+      - name: Publish
+        run: >
+          dotnet publish src/MeiyouToolbox/MeiyouToolbox.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          -o publish
+
+      # ---- 产物上传：Actions Artifact ----
+      - name: Upload build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeiyouToolbox-win-x64
+          path: publish/**
+          if-no-files-found: warn
+
+      # ---- 日志上传：Actions Artifact ----
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            **/*.log
+            **/obj/**/*.log
+          if-no-files-found: ignore
+
+      # ---- 沙箱内先收集，供后续提交到仓库 ----
+      - name: Collect CI report
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ci-report | Out-Null
+          $info = @(
+            "job_status=${{ job.status }}",
+            "event=${{ github.event_name }}",
+            "ref=${{ github.ref }}",
+            "sha=${{ github.sha }}",
+            "run_id=${{ github.run_id }}",
+            "run_number=${{ github.run_number }}",
+            "actor=${{ github.actor }}",
+            "time=$((Get-Date).ToUniversalTime().ToString('o'))"
+          )
+          $info | Set-Content ci-report/summary.txt -Encoding utf8
+
+          # 把 publish 的文件清单也记下来，便于确认产物完整性
+          if (Test-Path publish) {
+            Get-ChildItem publish -Recurse -File |
+              ForEach-Object { "{0}`t{1}" -f $_.FullName.Replace((Resolve-Path publish).Path, '').TrimStart('\'), $_.Length } |
+              Set-Content ci-report/artifact-files.txt -Encoding utf8
+          }
+
+      - name: Upload CI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-report
+          path: ci-report/**
+          if-no-files-found: ignore
+
+  # =====================================================================
+  # 把产物 + CI 报告推到 dist 分支，方便无法直连 Release 的环境取回
+  # =====================================================================
+  dist:
+    name: Publish to dist branch
+    needs: build
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout dist branch
+        uses: actions/checkout@v4
+        with:
+          ref: dist
+          path: dist-repo
+        continue-on-error: true
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: MeiyouToolbox-win-x64
+          path: dist-repo/output
+        continue-on-error: true
+
+      - name: Download CI report
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-report
+          path: dist-repo/ci-report
+        continue-on-error: true
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -e
+          cd dist-repo
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # dist 分支首次创建时目录可能为空
+          if [ ! -d .git ]; then
+            git init -b dist
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          fi
+
+          mkdir -p ci-report
+          cat > ci-report/README.md <<'EOF'
+          # CI 产物分支
+
+          本分支由 `Build` 工作流自动写入，**请勿手工修改**。
+
+          - `output/`    —— win-x64 构建产物
+          - `ci-report/` —— 每次构建的状态摘要与文件清单
+
+          取回方式：
+
+          ```bash
+          git fetch origin dist
+          git checkout dist
+          ```
+          EOF
+
+          git add -A
+          git commit -m "dist: build #${{ github.run_number }} (${{ github.sha }})" || echo "no changes"
+          git push origin HEAD:dist --force

@@ -1,0 +1,20 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MeiyouToolbox.App"
+             RequestedThemeVariant="Default">
+    <!-- Arc 的样式、主题与设计令牌由 UseArcApp() -> UseArc() -> UseArcBlocks() 在运行时装配
+         （见 TKCode.Arc.Foundation/Registration/ArcRuntime.cs），因此这里不手工 StyleInclude。
+
+         这里只放本程序自己的调色板与控件样式。 -->
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://MeiyouToolbox/Styles/Colors.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <StyleInclude Source="avares://MeiyouToolbox/Styles/AppStyles.axaml" />
+    </Application.Styles>
+</Application>
