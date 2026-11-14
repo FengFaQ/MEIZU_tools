@@ -11,7 +11,7 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.topbar-text:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceHover}" />
     </Style>
 
     <!-- 窗口按钮 -->
@@ -27,7 +27,7 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.window-btn:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceHover}" />
     </Style>
     <Style Selector="Button.window-btn-close:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="#E81123" />
@@ -42,13 +42,13 @@
         <Setter Property="FontSize" Value="13.5" />
         <Setter Property="CornerRadius" Value="9" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource ArcForegroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AppForeground}" />
     </Style>
     <Style Selector="RadioButton.nav-item:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceHover}" />
     </Style>
     <Style Selector="RadioButton.nav-item:checked /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource ArcAccentSoftBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppAccentSoft}" />
     </Style>
 
     <!-- 快捷打开按钮 -->
@@ -59,12 +59,12 @@
         <Setter Property="Margin" Value="4" />
         <Setter Property="CornerRadius" Value="10" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="Background" Value="{DynamicResource ArcSurfaceHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceHover}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="{DynamicResource ArcBorderBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
     </Style>
     <Style Selector="Button.quick:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource ArcAccentSoftBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppAccentSoft}" />
     </Style>
 
 </Styles>

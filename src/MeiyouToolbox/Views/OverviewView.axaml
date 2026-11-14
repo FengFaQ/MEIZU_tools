@@ -17,8 +17,8 @@
 
         <!-- ======== 第一、四象限：手机状态（左侧通栏） ======== -->
         <Border Grid.Column="0" Grid.RowSpan="2"
-                Background="{DynamicResource ArcSurfaceBrush}"
-                BorderBrush="{DynamicResource ArcBorderBrush}"
+                Background="{DynamicResource AppSurface}"
+                BorderBrush="{DynamicResource AppBorder}"
                 BorderThickness="1"
                 CornerRadius="12"
                 Padding="18">
@@ -29,7 +29,7 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Spacing="4">
                             <TextBlock Text="手机状态" FontSize="13"
-                                       Foreground="{DynamicResource ArcTextMutedBrush}" />
+                                       Foreground="{DynamicResource AppTextMuted}" />
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <Ellipse Width="10" Height="10" VerticalAlignment="Center"
                                          Fill="{Binding IsConnected, Converter={StaticResource StatusDotConverter}}" />
@@ -52,19 +52,19 @@
 
                     <!-- 第二行：连接途径（未连接时不显示） -->
                     <Border IsVisible="{Binding HasConnectionPath}"
-                            Background="{DynamicResource ArcSurfaceHoverBrush}"
+                            Background="{DynamicResource AppSurfaceHover}"
                             CornerRadius="8"
                             Padding="12,8">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="连接途径" FontSize="12"
-                                       Foreground="{DynamicResource ArcTextMutedBrush}"
+                                       Foreground="{DynamicResource AppTextMuted}"
                                        VerticalAlignment="Center" />
                             <TextBlock Text="{Binding ConnectionPathText}"
                                        FontWeight="Medium" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
-                    <Separator Background="{DynamicResource ArcBorderBrush}" Height="1" />
+                    <Separator Background="{DynamicResource AppBorder}" Height="1" />
 
                     <!-- 第三部分：设备具体信息（14 项） -->
                     <ItemsControl ItemsSource="{Binding DeviceFields}">
@@ -79,7 +79,7 @@
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding Label}"
                                                FontSize="12.5"
-                                               Foreground="{DynamicResource ArcTextMutedBrush}" />
+                                               Foreground="{DynamicResource AppTextMuted}" />
                                     <TextBlock Grid.Column="1"
                                                Text="{Binding Value}"
                                                FontSize="12.5"
@@ -97,15 +97,15 @@
         <!-- ======== 第二象限：电脑状态 + 当前任务 ======== -->
         <Border Grid.Column="1" Grid.Row="0"
                 MinWidth="320"
-                Background="{DynamicResource ArcSurfaceBrush}"
-                BorderBrush="{DynamicResource ArcBorderBrush}"
+                Background="{DynamicResource AppSurface}"
+                BorderBrush="{DynamicResource AppBorder}"
                 BorderThickness="1"
                 CornerRadius="12"
                 Padding="18"
                 VerticalAlignment="Top">
             <StackPanel Spacing="14">
                 <TextBlock Text="电脑状态" FontSize="13"
-                           Foreground="{DynamicResource ArcTextMutedBrush}" />
+                           Foreground="{DynamicResource AppTextMuted}" />
 
                 <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" RowSpacing="8"
                       ColumnSpacing="10">
@@ -121,10 +121,10 @@
                                VerticalAlignment="Center" />
                 </Grid>
 
-                <Separator Background="{DynamicResource ArcBorderBrush}" Height="1" />
+                <Separator Background="{DynamicResource AppBorder}" Height="1" />
 
                 <TextBlock Text="当前任务" FontSize="13"
-                           Foreground="{DynamicResource ArcTextMutedBrush}" />
+                           Foreground="{DynamicResource AppTextMuted}" />
 
                 <TextBlock Text="{Binding TaskTitle}" FontSize="15" FontWeight="Medium" />
 
@@ -144,15 +144,15 @@
         <Border Grid.Column="1" Grid.Row="1"
                 MinWidth="320"
                 Margin="0,16,0,0"
-                Background="{DynamicResource ArcSurfaceBrush}"
-                BorderBrush="{DynamicResource ArcBorderBrush}"
+                Background="{DynamicResource AppSurface}"
+                BorderBrush="{DynamicResource AppBorder}"
                 BorderThickness="1"
                 CornerRadius="12"
                 Padding="18"
                 VerticalAlignment="Bottom">
             <StackPanel Spacing="12">
                 <TextBlock Text="快捷打开" FontSize="13"
-                           Foreground="{DynamicResource ArcTextMutedBrush}" />
+                           Foreground="{DynamicResource AppTextMuted}" />
 
                 <UniformGrid Columns="2" Rows="2">
                     <Button Classes="quick" Command="{Binding OpenComputerManagementCommand}"

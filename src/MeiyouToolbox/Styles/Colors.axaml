@@ -1,32 +1,41 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- 程序自身的调色板。Arc 的设计令牌在运行时由 UseArc() 注册；
-         这里只补 Arc 未覆盖、本界面需要的中性色，并尽量让明暗两种外观都可用。 -->
+    <!--
+        本程序自己的调色板。
+        键名统一加 App 前缀，避免与 TKCode.Arc 运行时注册的设计令牌（ArcForeground 等）撞名 ——
+        Arc 在启动时会把 token 字典 merge 进 Application.Resources，
+        同名键的加载顺序会让排查变得很麻烦。
+    -->
 
     <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="ArcSurfaceBrush" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="ArcSurfaceHoverBrush" Color="#F3F4F6" />
-            <SolidColorBrush x:Key="ArcBorderBrush" Color="#E5E7EB" />
-            <SolidColorBrush x:Key="ArcForegroundBrush" Color="#111827" />
-            <SolidColorBrush x:Key="ArcTextMutedBrush" Color="#6B7280" />
-            <SolidColorBrush x:Key="ArcAccentSoftBrush" Color="#DBEAFE" />
+            <SolidColorBrush x:Key="AppSurface" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="AppSurfaceHover" Color="#F3F4F6" />
+            <SolidColorBrush x:Key="AppBorder" Color="#E5E7EB" />
+            <SolidColorBrush x:Key="AppForeground" Color="#111827" />
+            <SolidColorBrush x:Key="AppTextMuted" Color="#6B7280" />
+            <SolidColorBrush x:Key="AppAccentSoft" Color="#DBEAFE" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="ArcSurfaceBrush" Color="#18181B" />
-            <SolidColorBrush x:Key="ArcSurfaceHoverBrush" Color="#27272A" />
-            <SolidColorBrush x:Key="ArcBorderBrush" Color="#3F3F46" />
-            <SolidColorBrush x:Key="ArcForegroundBrush" Color="#FAFAFA" />
-            <SolidColorBrush x:Key="ArcTextMutedBrush" Color="#A1A1AA" />
-            <SolidColorBrush x:Key="ArcAccentSoftBrush" Color="#1E3A8A" />
+            <SolidColorBrush x:Key="AppSurface" Color="#18181B" />
+            <SolidColorBrush x:Key="AppSurfaceHover" Color="#27272A" />
+            <SolidColorBrush x:Key="AppBorder" Color="#3F3F46" />
+            <SolidColorBrush x:Key="AppForeground" Color="#FAFAFA" />
+            <SolidColorBrush x:Key="AppTextMuted" Color="#A1A1AA" />
+            <SolidColorBrush x:Key="AppAccentSoft" Color="#1E3A8A" />
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>
 
-    <!-- 默认（无主题字典命中时）也指向浅色 -->
-    <SolidColorBrush x:Key="ArcSurfaceBrushDefault" Color="#FFFFFF" />
+    <!-- 兜底：主题字典未命中时（极少见）也能取到值，避免运行时 KeyNotFound -->
+    <SolidColorBrush x:Key="AppSurface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppSurfaceHover" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="AppBorder" Color="#E5E7EB" />
+    <SolidColorBrush x:Key="AppForeground" Color="#111827" />
+    <SolidColorBrush x:Key="AppTextMuted" Color="#6B7280" />
+    <SolidColorBrush x:Key="AppAccentSoft" Color="#DBEAFE" />
 
 </ResourceDictionary>

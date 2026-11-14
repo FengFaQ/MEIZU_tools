@@ -10,9 +10,8 @@
              x:DataType="vm:MainViewModel"
              mc:Ignorable="d">
 
-    <UserControl.Resources>
-        <conv:StatusDotConverter x:Key="StatusDotConverter" />
-    </UserControl.Resources>
+    <!-- StatusDotConverter 已统一注册在 App.axaml 的 Application.Resources，
+         不要在这里重复定义（否则其他 View 构造时仍找不到）。 -->
 
     <DockPanel ClipToBounds="True">
 
@@ -20,9 +19,9 @@
         <Border DockPanel.Dock="Top"
                 Height="44"
                 Padding="6,0"
-                Background="{DynamicResource ArcSurfaceBrush}"
+                Background="{DynamicResource AppSurface}"
                 BorderThickness="0,0,0,1"
-                BorderBrush="{DynamicResource ArcBorderBrush}">
+                BorderBrush="{DynamicResource AppBorder}">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto">
 
                 <!-- 侧栏展开 / 收起 -->
@@ -61,9 +60,9 @@
         <!-- ============ 侧栏 ============ -->
         <Border DockPanel.Dock="Left"
                 Width="192"
-                Background="{DynamicResource ArcSurfaceBrush}"
+                Background="{DynamicResource AppSurface}"
                 BorderThickness="0,0,1,0"
-                BorderBrush="{DynamicResource ArcBorderBrush}"
+                BorderBrush="{DynamicResource AppBorder}"
                 IsVisible="{Binding IsSidebarExpanded}">
             <DockPanel LastChildFill="True">
 

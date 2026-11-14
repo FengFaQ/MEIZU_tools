@@ -20,7 +20,7 @@
         <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"
                    HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Description}" FontSize="13"
-                   Foreground="{DynamicResource ArcTextMutedBrush}"
+                   Foreground="{DynamicResource AppTextMuted}"
                    HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" />
     </StackPanel>
 </UserControl>
