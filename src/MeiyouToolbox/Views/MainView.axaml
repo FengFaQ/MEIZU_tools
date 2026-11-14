@@ -133,7 +133,7 @@
             <Border IsVisible="{Binding IsFlash}">
                 <views:PlaceholderView>
                     <views:PlaceholderView.DataContext>
-                        <views:PlaceholderViewModel Title="刷机" Description="解锁 / 上锁 BL、Magisk Root、刷入 Recovery、9008 线刷完整包与任意分区写入。" IconKind="Zap" />
+                        <vm:PlaceholderViewModel Title="刷机" Description="解锁 / 上锁 BL、Magisk Root、刷入 Recovery、9008 线刷完整包与任意分区写入。" IconKind="Zap" />
                     </views:PlaceholderView.DataContext>
                 </views:PlaceholderView>
             </Border>
@@ -141,7 +141,7 @@
             <Border IsVisible="{Binding IsBackup}">
                 <views:PlaceholderView>
                     <views:PlaceholderView.DataContext>
-                        <views:PlaceholderViewModel Title="备份" Description="全分区备份、任意分区回读、QCN 基带备份与恢复。" IconKind="HardDriveDownload" />
+                        <vm:PlaceholderViewModel Title="备份" Description="全分区备份、任意分区回读、QCN 基带备份与恢复。" IconKind="HardDriveDownload" />
                     </views:PlaceholderView.DataContext>
                 </views:PlaceholderView>
             </Border>
@@ -149,7 +149,7 @@
             <Border IsVisible="{Binding IsManage}">
                 <views:PlaceholderView>
                     <views:PlaceholderView.DataContext>
-                        <views:PlaceholderViewModel Title="管理" Description="分区表读写、槽位管理、工具箱目录与日志查看。" IconKind="Wrench" />
+                        <vm:PlaceholderViewModel Title="管理" Description="分区表读写、槽位管理、工具箱目录与日志查看。" IconKind="Wrench" />
                     </views:PlaceholderView.DataContext>
                 </views:PlaceholderView>
             </Border>
@@ -157,7 +157,7 @@
             <Border IsVisible="{Binding IsSettings}">
                 <views:PlaceholderView>
                     <views:PlaceholderView.DataContext>
-                        <views:PlaceholderViewModel Title="设置" Description="外观主题、工具路径、备份目录与行为偏好。" IconKind="Settings" />
+                        <vm:PlaceholderViewModel Title="设置" Description="外观主题、工具路径、备份目录与行为偏好。" IconKind="Settings" />
                     </views:PlaceholderView.DataContext>
                 </views:PlaceholderView>
             </Border>
