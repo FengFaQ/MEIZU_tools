@@ -39,7 +39,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public string LogDirectory => _logger?.LogDirectory ?? "(未初始化)";
 
-    public string ScreenshotDirectory => _screenshots?.Directory ?? "(未初始化)";
+    public string ScreenshotDirectory => _screenshots?.ScreenshotDirectory ?? "(未初始化)";
 
     [ObservableProperty]
     private bool _autoProbeOnStartup = true;

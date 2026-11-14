@@ -11,7 +11,8 @@ namespace MeiyouToolbox.Services;
 /// </summary>
 public interface IScreenshotService
 {
-    string Directory { get; }
+    /// <summary>截图输出目录。</summary>
+    string ScreenshotDirectory { get; }
 
     /// <summary>截取指定窗口，返回保存的文件路径；失败返回 null。</summary>
     Task<string?> CaptureWindowAsync(Window window, CancellationToken cancellationToken = default);
@@ -24,10 +25,13 @@ public sealed class ScreenshotService : IScreenshotService
     public ScreenshotService(IAppLogger logger, IToolLocator tools)
     {
         _logger = logger;
-        Directory = Path.Combine(tools.AppDirectory, "screenshots");
+
+        // 注意：本类不能有名为 Directory 的成员，
+        // 否则会遮蔽 System.IO.Directory，导致 Directory.CreateDirectory 解析失败（CS1929）。
+        ScreenshotDirectory = Path.Combine(tools.AppDirectory, "screenshots");
     }
 
-    public string Directory { get; }
+    public string ScreenshotDirectory { get; }
 
     public Task<string?> CaptureWindowAsync(Window window, CancellationToken cancellationToken = default)
     {
@@ -38,7 +42,7 @@ public sealed class ScreenshotService : IScreenshotService
         {
             try
             {
-                Directory.CreateDirectory(Directory);
+                System.IO.Directory.CreateDirectory(ScreenshotDirectory);
 
                 var size = window.Bounds.Size;
                 if (size.Width < 1 || size.Height < 1)
@@ -48,9 +52,8 @@ public sealed class ScreenshotService : IScreenshotService
                     return;
                 }
 
-                // 给 Arc 的动画/布局一个稳定的帧
                 var path = Path.Combine(
-                    Directory,
+                    ScreenshotDirectory,
                     $"window-{DateTime.Now:yyyyMMdd-HHmmss}.png");
 
                 using (var bitmap = new RenderTargetBitmap(
