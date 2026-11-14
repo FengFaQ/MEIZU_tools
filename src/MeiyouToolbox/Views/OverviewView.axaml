@@ -1,72 +1,73 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:arc="https://github.com/AIDotNet/TKCode.Arc"
              xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
              xmlns:vm="using:MeiyouToolbox.ViewModels"
              x:Class="MeiyouToolbox.Views.OverviewView"
-             x:DataType="vm:OverviewViewModel"
-             mc:Ignorable="d">
+             x:DataType="vm:OverviewViewModel">
 
-    <!-- 坐标系约定（原点 = 主窗口中心，X 轴向右为正、Y 轴向上为正）：
-         · 第一/四象限（贯穿 X 轴）= 左半，上下通栏  → 手机状态
-         · 第二象限（左上）                        → 电脑状态 + 任务状态
-         · 第三象限（左下）                        → 快捷打开
-         于是版面为：左列(通栏) | 右列(上=概览信息, 下=快捷打开) -->
-    <Grid Margin="16" ColumnDefinitions="*,Auto" RowDefinitions="Auto,*" ColumnSpacing="16">
+    <!--
+        坐标系约定（原点 = 主窗口中心，X 轴向右为正、Y 轴向上为正）：
+          第一/四象限（贯穿 X 轴）= 左半通栏  → 手机状态
+          第二象限（右上）                  → 电脑状态 + 当前任务
+          第三象限（右下）                  → 快捷打开
+        颜色全部走 Arc Design Token（{arc:ArcDesignTokenResource ...}），
+        不自己定义画刷，避免与 Arc 的亮/暗主题冲突导致白字白底。
+    -->
+    <Grid Margin="16" ColumnDefinitions="*,340" RowDefinitions="*,Auto" ColumnSpacing="16" RowSpacing="16">
 
         <!-- ======== 第一、四象限：手机状态（左侧通栏） ======== -->
-        <Border Grid.Column="0" Grid.RowSpan="2"
-                Background="{DynamicResource AppSurface}"
-                BorderBrush="{DynamicResource AppBorder}"
-                BorderThickness="1"
-                CornerRadius="12"
-                Padding="18">
+        <arc:Card Grid.Column="0" Grid.RowSpan="2" Padding="20">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="14">
+                <StackPanel Spacing="16">
 
-                    <!-- 第一行：连接状态 -->
+                    <!-- 第一行：连接状态 + 刷新 -->
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="手机状态" FontSize="13"
-                                       Foreground="{DynamicResource AppTextMuted}" />
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="手机状态"
+                                       FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <Ellipse Width="10" Height="10" VerticalAlignment="Center"
                                          Fill="{Binding IsConnected, Converter={StaticResource StatusDotConverter}}" />
                                 <TextBlock Text="{Binding StatusText}"
-                                           FontSize="22" FontWeight="SemiBold" />
+                                           FontSize="{arc:ArcDesignTokenResource TypeXL}"
+                                           FontWeight="SemiBold"
+                                           Foreground="{arc:ArcDesignTokenResource Foreground}" />
                             </StackPanel>
                         </StackPanel>
 
-                        <Button Grid.Column="1"
-                                VerticalAlignment="Top"
-                                Command="{Binding RefreshDeviceCommand}"
-                                IsEnabled="{Binding !IsProbing}"
-                                ToolTip.Tip="重新探测设备">
+                        <arc:Button Grid.Column="1" Variant="Secondary"
+                                    VerticalAlignment="Top"
+                                    Command="{Binding RefreshDeviceCommand}"
+                                    IsEnabled="{Binding !IsProbing}"
+                                    ToolTip.Tip="重新探测设备">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <lucide:LucideIcon Kind="RefreshCw" Size="14" />
                                 <TextBlock Text="刷新" />
                             </StackPanel>
-                        </Button>
+                        </arc:Button>
                     </Grid>
 
                     <!-- 第二行：连接途径（未连接时不显示） -->
                     <Border IsVisible="{Binding HasConnectionPath}"
-                            Background="{DynamicResource AppSurfaceHover}"
-                            CornerRadius="8"
-                            Padding="12,8">
+                            CornerRadius="8" Padding="12,8"
+                            Background="{arc:ArcDesignTokenResource SurfaceMuted}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="连接途径" FontSize="12"
-                                       Foreground="{DynamicResource AppTextMuted}"
+                            <TextBlock Text="连接途径"
+                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}"
                                        VerticalAlignment="Center" />
                             <TextBlock Text="{Binding ConnectionPathText}"
-                                       FontWeight="Medium" VerticalAlignment="Center" />
+                                       FontWeight="Medium"
+                                       Foreground="{arc:ArcDesignTokenResource Foreground}"
+                                       VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
-                    <Separator Background="{DynamicResource AppBorder}" Height="1" />
+                    <Separator Background="{arc:ArcDesignTokenResource BorderSubtle}" Height="1" />
 
-                    <!-- 第三部分：设备具体信息（14 项） -->
+                    <!-- 第三部分：14 项设备信息 -->
                     <ItemsControl ItemsSource="{Binding DeviceFields}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -75,14 +76,15 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:DeviceFieldRow">
-                                <Grid ColumnDefinitions="86,*" Margin="0,0,12,10">
+                                <Grid ColumnDefinitions="90,*" Margin="0,0,16,12">
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding Label}"
-                                               FontSize="12.5"
-                                               Foreground="{DynamicResource AppTextMuted}" />
+                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
                                     <TextBlock Grid.Column="1"
                                                Text="{Binding Value}"
-                                               FontSize="12.5"
+                                               FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                               Foreground="{arc:ArcDesignTokenResource Foreground}"
                                                TextTrimming="CharacterEllipsis"
                                                ToolTip.Tip="{Binding Value}" />
                                 </Grid>
@@ -92,41 +94,40 @@
 
                 </StackPanel>
             </ScrollViewer>
-        </Border>
+        </arc:Card>
 
         <!-- ======== 第二象限：电脑状态 + 当前任务 ======== -->
-        <Border Grid.Column="1" Grid.Row="0"
-                MinWidth="320"
-                Background="{DynamicResource AppSurface}"
-                BorderBrush="{DynamicResource AppBorder}"
-                BorderThickness="1"
-                CornerRadius="12"
-                Padding="18"
-                VerticalAlignment="Top">
-            <StackPanel Spacing="14">
-                <TextBlock Text="电脑状态" FontSize="13"
-                           Foreground="{DynamicResource AppTextMuted}" />
+        <arc:Card Grid.Column="1" Grid.Row="0" Padding="20" VerticalAlignment="Top">
+            <StackPanel Spacing="16">
+                <TextBlock Text="电脑状态"
+                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
 
-                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" RowSpacing="8"
-                      ColumnSpacing="10">
-                    <lucide:LucideIcon Grid.Row="0" Grid.Column="0" Kind="BatteryMedium" Size="15"
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" RowSpacing="10" ColumnSpacing="10">
+                    <lucide:LucideIcon Grid.Row="0" Grid.Column="0" Kind="Zap" Size="15"
                                       VerticalAlignment="Center" />
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BatteryText}"
+                               Foreground="{arc:ArcDesignTokenResource Foreground}"
                                VerticalAlignment="Center" />
 
-                    <lucide:LucideIcon Grid.Row="1" Grid.Column="0" Kind="Info" Size="15"
+                    <lucide:LucideIcon Grid.Row="1" Grid.Column="0" Kind="Smartphone" Size="15"
                                       VerticalAlignment="Center" />
                     <TextBlock Grid.Row="1" Grid.Column="1"
                                Text="{Binding AppVersion, StringFormat='魅友工具箱 {0}'}"
+                               Foreground="{arc:ArcDesignTokenResource Foreground}"
                                VerticalAlignment="Center" />
                 </Grid>
 
-                <Separator Background="{DynamicResource AppBorder}" Height="1" />
+                <Separator Background="{arc:ArcDesignTokenResource BorderSubtle}" Height="1" />
 
-                <TextBlock Text="当前任务" FontSize="13"
-                           Foreground="{DynamicResource AppTextMuted}" />
+                <TextBlock Text="当前任务"
+                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
 
-                <TextBlock Text="{Binding TaskTitle}" FontSize="15" FontWeight="Medium" />
+                <TextBlock Text="{Binding TaskTitle}"
+                           FontSize="{arc:ArcDesignTokenResource TypeLG}"
+                           FontWeight="Medium"
+                           Foreground="{arc:ArcDesignTokenResource Foreground}" />
 
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <ProgressBar Grid.Column="0"
@@ -135,59 +136,57 @@
                                  IsIndeterminate="{Binding CurrentTask.IsIndeterminate}"
                                  VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding TaskPercentText}"
+                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
                                VerticalAlignment="Center" />
                 </Grid>
             </StackPanel>
-        </Border>
+        </arc:Card>
 
         <!-- ======== 第三象限：快捷打开 ======== -->
-        <Border Grid.Column="1" Grid.Row="1"
-                MinWidth="320"
-                Margin="0,16,0,0"
-                Background="{DynamicResource AppSurface}"
-                BorderBrush="{DynamicResource AppBorder}"
-                BorderThickness="1"
-                CornerRadius="12"
-                Padding="18"
-                VerticalAlignment="Bottom">
+        <arc:Card Grid.Column="1" Grid.Row="1" Padding="20" VerticalAlignment="Bottom">
             <StackPanel Spacing="12">
-                <TextBlock Text="快捷打开" FontSize="13"
-                           Foreground="{DynamicResource AppTextMuted}" />
+                <TextBlock Text="快捷打开"
+                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
 
                 <UniformGrid Columns="2" Rows="2">
-                    <Button Classes="quick" Command="{Binding OpenComputerManagementCommand}"
-                            ToolTip.Tip="C:\Windows\System32\mmc.exe">
+                    <arc:Button Classes="quick" Variant="Secondary"
+                                Command="{Binding OpenComputerManagementCommand}"
+                                ToolTip.Tip="C:\Windows\System32\mmc.exe">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <lucide:LucideIcon Kind="MonitorCog" Size="15" />
+                            <lucide:LucideIcon Kind="PanelLeft" Size="15" />
                             <TextBlock Text="设备管理" />
                         </StackPanel>
-                    </Button>
+                    </arc:Button>
 
-                    <Button Classes="quick" Command="{Binding OpenTerminalCommand}"
-                            ToolTip.Tip="在工具目录打开 CMD（可直接用 adb / fastboot）">
+                    <arc:Button Classes="quick" Variant="Secondary"
+                                Command="{Binding OpenTerminalCommand}"
+                                ToolTip.Tip="在工具目录打开 CMD（可直接用 adb / fastboot）">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <lucide:LucideIcon Kind="Terminal" Size="15" />
                             <TextBlock Text="终端" />
                         </StackPanel>
-                    </Button>
+                    </arc:Button>
 
-                    <Button Classes="quick" Command="{Binding OpenTaskManagerCommand}"
-                            ToolTip.Tip="C:\Windows\System32\Taskmgr.exe">
+                    <arc:Button Classes="quick" Variant="Secondary"
+                                Command="{Binding OpenTaskManagerCommand}"
+                                ToolTip.Tip="C:\Windows\System32\Taskmgr.exe">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <lucide:LucideIcon Kind="Activity" Size="15" />
                             <TextBlock Text="任务管理器" />
                         </StackPanel>
-                    </Button>
+                    </arc:Button>
 
-                    <Button Classes="quick" Command="{Binding OpenAppDirectoryCommand}"
-                            ToolTip.Tip="在资源管理器中打开程序目录">
+                    <arc:Button Classes="quick" Variant="Secondary"
+                                Command="{Binding OpenAppDirectoryCommand}"
+                                ToolTip.Tip="在资源管理器中打开程序目录">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <lucide:LucideIcon Kind="FolderOpen" Size="15" />
                             <TextBlock Text="目录管理" />
                         </StackPanel>
-                    </Button>
+                    </arc:Button>
                 </UniformGrid>
             </StackPanel>
-        </Border>
+        </arc:Card>
     </Grid>
 </UserControl>

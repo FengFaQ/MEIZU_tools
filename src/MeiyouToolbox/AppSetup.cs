@@ -15,6 +15,9 @@ public static class AppSetup
         builder.WithInterFont()      // 正文用 Inter（Avalonia.Fonts.Inter）
                .WithArcFonts()       // 标题用 Geist，等宽用 Geist Mono（TKCode.Arc.Fonts）
                .UseArc(arc => arc
-                   .UseArcBlocks()   // Arc 控件 + 页面级 blocks（Sidebar 在这里），同时注册 UseArcControls()
-                   .WithTheme(t => t.Appearance(ArcAppearance.System).Accent(ArcAccentPreset.Neutral)));
+                   .UseArcBlocks()   // Arc 控件 + 页面级 blocks（Sidebar/Card 等），内部已注册 UseArcControls()
+                   // 固定为浅色外观：整套界面按浅色设计，避免跟随系统暗色导致对比度问题。
+                   // 运行时仍可用 ArcTheme.Apply(t => t.Appearance(...)) 切换。
+                   .WithTheme(t => t.Appearance(ArcAppearance.Light)
+                                    .Accent(ArcAccentPreset.Neutral)));
 }

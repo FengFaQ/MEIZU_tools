@@ -18,9 +18,17 @@ public static class AppServices
         services.AddSingleton<IToolLocator, ToolLocator>();
         services.AddSingleton<IShellLauncher, ShellLauncher>();
 
+        // 日志（依赖工具目录，用于定位程序目录）
+        services.AddSingleton<IAppLogger>(sp =>
+        {
+            var tools = sp.GetRequiredService<IToolLocator>();
+            return new AppLogger(tools.AppDirectory);
+        });
+
         // 业务服务
         services.AddSingleton<IHostInfoService, HostInfoService>();
         services.AddSingleton<IDeviceService, DeviceService>();
+        services.AddSingleton<IScreenshotService, ScreenshotService>();
 
         // 视图模型
         services.AddSingleton<OverviewViewModel>();

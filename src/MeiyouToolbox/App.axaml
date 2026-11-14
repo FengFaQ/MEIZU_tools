@@ -2,25 +2,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="using:MeiyouToolbox.Converters"
              x:Class="MeiyouToolbox.App"
-             RequestedThemeVariant="Default">
-    <!-- Arc 的样式、主题与设计令牌由 UseArcApp() -> UseArc() -> UseArcBlocks() 在运行时装配
-         （见 TKCode.Arc.Foundation/Registration/ArcRuntime.cs），因此这里不手工 StyleInclude。
-
-         这里只放本程序自己的调色板、转换器与控件样式。
-         注意：转换器必须注册在 Application 级资源里。若只放在某个 UserControl.Resources，
-         其它 View 在构造时（尚未挂到该控件之下）用 StaticResource 会抛
-         KeyNotFoundException 并导致进程直接退出、无窗口。 -->
+             RequestedThemeVariant="Light">
+    <!--
+        只注册本程序自己的转换器。
+        颜色/主题一律由 TKCode.Arc 在运行时注册的 Design Token 提供
+        （{arc:ArcDesignTokenResource Foreground} 等），不自己拍一套画刷，
+        否则会和 Arc 的亮/暗令牌打架，出现"白字白底"。
+    -->
     <Application.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://MeiyouToolbox/Styles/Colors.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-
             <conv:StatusDotConverter x:Key="StatusDotConverter" />
+            <conv:NavVariantConverter x:Key="NavVariantConverter" />
         </ResourceDictionary>
     </Application.Resources>
-
-    <Application.Styles>
-        <StyleInclude Source="avares://MeiyouToolbox/Styles/AppStyles.axaml" />
-    </Application.Styles>
 </Application>

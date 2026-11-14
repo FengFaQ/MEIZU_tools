@@ -1,26 +1,17 @@
-<arc:ArcWindow xmlns="https://github.com/avaloniaui"
-               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-               xmlns:arc="https://github.com/AIDotNet/TKCode.Arc"
-               xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
-               xmlns:views="using:MeiyouToolbox.Views"
-               xmlns:vm="using:MeiyouToolbox.ViewModels"
-               x:Class="MeiyouToolbox.Views.MainWindow"
-               x:DataType="vm:MainViewModel"
-               Title="魅友工具箱"
-               Width="1180"
-               Height="740"
-               MinWidth="960"
-               MinHeight="600"
-               WindowStartupLocation="CenterScreen">
-    <!-- ArcWindow 的标题栏替代系统标题栏：图标、标题、窗口按钮，以及三块自定义区域
-         TitleBar.LeftContent / CenterContent / RightContent。空白处可拖动窗口，双击最大化。 -->
-    <arc:ArcWindow.TitleBar>
-        <arc:TitleBar>
-            <arc:TitleBar.Icon>
-                <lucide:LucideIcon Kind="Smartphone" Size="14" VerticalAlignment="Center" />
-            </arc:TitleBar.Icon>
-        </arc:TitleBar>
-    </arc:ArcWindow.TitleBar>
-
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:MeiyouToolbox.Views"
+        xmlns:vm="using:MeiyouToolbox.ViewModels"
+        x:Class="MeiyouToolbox.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="魅友工具箱"
+        Width="1180"
+        Height="740"
+        MinWidth="960"
+        MinHeight="600"
+        Background="White"
+        WindowStartupLocation="CenterScreen">
+    <!-- 顶栏、侧栏与自定义窗口按钮都在 MainView 里绘制，
+         因此这里用普通 Window（无系统边框样式），标题栏由我们自己实现。 -->
     <views:MainView />
-</arc:ArcWindow>
+</Window>
