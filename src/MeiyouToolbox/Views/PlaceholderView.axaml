@@ -1,10 +1,22 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
-             x:Class="MeiyouToolbox.Views.PlaceholderView">
-    <!-- 刷机 / 备份 / 管理三页在下一轮实现，先给出统一占位，保证导航可用。 -->
+             xmlns:vm="using:MeiyouToolbox.Views"
+             x:Class="MeiyouToolbox.Views.PlaceholderView"
+             x:DataType="vm:PlaceholderViewModel">
+    <!--
+        注意：TKCode.Arc 的 Lucide 图标由源生成器按"字面量 Kind"编译进程序。
+        用绑定传 Kind 时生成器无法判断需要哪些图标，会报 ARCL002 且图标画不出来。
+        因此这里改为按 IconKind 字面量分支渲染，同时把用到的图标在 csproj 里显式声明。
+    -->
     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-        <lucide:LucideIcon Kind="{Binding IconKind}" Size="40" HorizontalAlignment="Center" />
+        <Panel HorizontalAlignment="Center">
+            <lucide:LucideIcon Kind="Zap" Size="40" IsVisible="{Binding IsFlashIcon}" />
+            <lucide:LucideIcon Kind="HardDriveDownload" Size="40" IsVisible="{Binding IsBackupIcon}" />
+            <lucide:LucideIcon Kind="Wrench" Size="40" IsVisible="{Binding IsManageIcon}" />
+            <lucide:LucideIcon Kind="Settings" Size="40" IsVisible="{Binding IsSettingsIcon}" />
+        </Panel>
+
         <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"
                    HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Description}" FontSize="13"

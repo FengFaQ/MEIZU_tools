@@ -30,6 +30,9 @@ public sealed class ToolLocator : IToolLocator
         _toolsDirectory = new Lazy<string>(ResolveToolsDirectory);
     }
 
+    /// <inheritdoc />
+    public string AppDirectory { get; }
+
     public string ToolsDirectory => _toolsDirectory.Value;
 
     public string? AdbPath => Locate("adb" + ExecutableSuffix);

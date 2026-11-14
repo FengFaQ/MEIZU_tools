@@ -25,7 +25,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- 随程序分发的外部工具（adb / fastboot 等），由 CI 或首次运行准备 -->
-        <None Include="Tools/**" CopyToOutputDirectory="PreserveNewest" />
+        <!--
+            TKCode.Arc.Icons.Lucide 的源生成器只编译"XAML 里以字面量写出的 Kind"。
+            凡是需要在运行时动态决定、或通过绑定/数据模板选中的图标，必须在这里显式声明，
+            否则图标不会被打包，运行时不显示。
+            这里列出本项目全部用到的图标，避免遗漏。
+        -->
+        <LucideIcon Include="Activity;FolderOpen;HardDriveDownload;LayoutDashboard;Minus;MonitorCog;PanelLeft;RefreshCw;Settings;Smartphone;Square;Terminal;Wrench;X;Zap" />
     </ItemGroup>
 </Project>
