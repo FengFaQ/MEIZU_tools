@@ -4,6 +4,97 @@
 
 ---
 
+## 零、编译期踩坑实录（2026-11-14，从红到绿共 7 轮）
+
+本地没有 .NET SDK，只能靠 GitHub Actions 反馈，每轮约 4 分钟。
+以下 7 条都是**实际让 CI 变红**的原因，写功能时避开它们能省大量时间。
+
+### 0.1 属性名 / 类名遮蔽 BCL 类型 —— 最隐蔽的一类
+
+```csharp
+// ❌ 报 CS1061: 'BackgroundTaskProgress' does not contain a definition for 'Run'
+[ObservableProperty] private BackgroundTaskProgress _task = ...;   // 生成属性 Task
+...
+_ = Task.Run(...);   // 解析到生成的属性，不是 System.Threading.Tasks.Task
+```
+
+- `[ObservableProperty] private Xxx _task` 会生成名为 **`Task`** 的 public 属性，
+  它**遮蔽同命名空间/同作用域的 `System.Threading.Tasks.Task` 类型**
+- 同类问题：`_appVersion` 生成 `AppVersion` 属性，遮蔽了名为 `AppVersion` 的静态类
+- **修法**：属性名不要用 `Task`、`Action`、`Timer` 等 BCL 名；
+  必要时写全限定名 `System.Threading.Tasks.Task.Run`
+- **规律**：`[ObservableProperty]` 生成的属性名 = 去掉下划线首字母大写，
+  **提交前想一遍这个名字会不会撞 BCL**
+
+### 0.2 一个 `.cs` 文件里放两个类 → XAML 找不到类型
+
+```
+Unable to find type `MeiyouToolbox.Views.PlaceholderView`
+```
+
+`PlaceholderView.axaml.cs` 里同时声明 `PlaceholderView` 和 `PlaceholderViewModel` 时，
+XAML 编译器解析不到 `PlaceholderView`。
+**修法**：`<Xxx>.axaml.cs` 里**只放** `Xxx` 这一个类，其他类另开文件。
+
+### 0.3 XAML 实例化 VM 必须有公共无参构造函数
+
+```
+AVLN3000: Unable to find public constructor for type PlaceholderViewModel()
+AVLN3000: Unable to find suitable setter or adder for property Title
+```
+
+在 XAML 里写 `<vm:PlaceholderViewModel Title=".." />` 要求：
+1. **公共无参构造函数**
+2. 属性**可写**（`[ObservableProperty]` 生成的就是可写的 `set`）
+
+只读属性 + 有参构造 = 16 个错误。
+**修法**：需要 XAML 直接实例化的 VM，一律用无参构造 + `[ObservableProperty]`。
+
+### 0.4 移动类之后，XAML 的 `using:` 命名空间要同步改
+
+VM 从 `Views` 移到 `ViewModels` 后，`PlaceholderView.axaml` 里
+`xmlns:vm="using:MeiyouToolbox.Views"` 没跟着改 → `Unable to resolve type`。
+**修法**：改命名空间时全局搜一遍 `using:MeiyouToolbox.`
+
+### 0.5 接口成员必须显式实现为公开属性
+
+```csharp
+// 接口里：string AppDirectory { get; }
+// 实现里只在构造函数赋值，没写属性声明 → CS0535
+public ToolLocator() { AppDirectory = ...; }   // ❌
+public string AppDirectory { get; }            // ✅ 必须显式声明
+```
+
+### 0.6 `GetRequiredService` 需要 `using Microsoft.Extensions.DependencyInjection`
+
+否则报 `CS1061: 'IServiceProvider' does not contain a definition for 'GetRequiredService'`。
+它是**扩展方法**，在 `Microsoft.Extensions.DependencyInjection` 命名空间下。
+
+### 0.7 Lucide 图标绑定 → ARCL002 警告 + 运行时不显示
+
+```
+warning ARCL002: LucideIcon.Kind is bound here, so the generator cannot tell which icons it shows
+```
+
+源生成器只处理 **XAML 中的字面量 Kind**。用绑定/数据传 Kind 时：
+- 编译只给警告（不红），但**图标静默不显示**，只在 Avalonia 日志留一条
+- **修法**：改用字面量分支渲染 + 在 csproj 里显式声明：
+  ```xml
+  <LucideIcon Include="Activity;FolderOpen;HardDriveDownload;..." />
+  ```
+- 也可 `<LucideIconsIncludeAll>true</LucideIconsIncludeAll>`（体积变大）
+
+**这套库的图标名有 2141 个枚举成员，写错名字也是静默失败** —— 已把权威清单存到
+`C:\Users\Administrator\Documents\dsh\_lucide_check\LucideIconKind.g.cs`，用前先校验。
+
+### 0.8 其余两条
+
+- **csproj 里的通配符 `<None Include="Tools/**" />`** 在目录不存在时可能引入空项，
+  已移除；若确需分发工具，改为按具体路径列出
+- **`.slnx` / 解决方案文件不是必需的**：直接 `dotnet build <csproj>` 即可
+
+---
+
 ## 一、环境与网络
 
 ### 1. 本机直连 GitHub / NuGet 全部不通

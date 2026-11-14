@@ -1,9 +1,29 @@
 # 项目记忆 · 当前状态
 
 > 本文件是本工程的**唯一事实来源**。每轮工作开始先读它，结束前更新它。
-> 最后更新：2026-11-14 15:42
+> 最后更新：2026-11-14 16:04
 
 ---
+
+## 零、当前状态（一眼看）
+
+| 项 | 状态 |
+|---|---|
+| **CI** | ✅ **通过**（run 43573662607，2m0s） |
+| 产物 | ✅ `MeiyouToolbox.exe` 162 KB，整包 48.6 MB |
+| dist 分支 | ✅ 57 个文件已回传（`output/` + `ci-report/`） |
+| 第一轮需求 | ✅ 已完成（三区域界面 + 概览页三部分 + 四快捷按钮） |
+| 下一步 | 刷机 / 备份 / 管理 / 设置 页面功能实现 |
+
+**验证 CI 的可用命令**（api.github.com 在完全权限下可达）：
+
+```powershell
+$gh = "C:\Users\Administrator\AppData\Local\Microsoft\WinGet\Links\gh.exe"
+& $gh run list --repo FengFaQ/MEIZU_tools --limit 3
+& $gh run view <RUN_ID> --repo FengFaQ/MEIZU_tools --log-failed   # 只看失败日志
+```
+
+> 注意：`gh api --jq` 在 PowerShell 里传参容易被转义破坏，**用 `ConvertFrom-Json` 处理 JSON** 更稳。
 
 ## 一、铁律（不可违反）
 
