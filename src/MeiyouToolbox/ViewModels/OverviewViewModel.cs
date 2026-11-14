@@ -39,7 +39,9 @@ public sealed partial class OverviewViewModel : ObservableObject
         RefreshHost();
 
         // 构造时不阻塞 UI：首帧渲染后再探测设备。
-        _ = Task.Run(async () =>
+        // 注意用全限定名：本类里有名为 Task 的属性（由 _currentTask 生成），
+        // 未限定会解析到该属性上导致 CS1061。
+        _ = System.Threading.Tasks.Task.Run(async () =>
         {
             try
             {
@@ -126,21 +128,21 @@ public sealed partial class OverviewViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TaskTitle), nameof(TaskPercentText), nameof(IsTaskRunning), nameof(HasTask))]
-    private BackgroundTaskProgress _task = BackgroundTaskProgress.Idle;
+    private BackgroundTaskProgress _currentTask = BackgroundTaskProgress.Idle;
 
-    public bool IsTaskRunning => Task.IsRunning;
+    public bool IsTaskRunning => CurrentTask.IsRunning;
 
-    public bool HasTask => Task.State != TaskState.Idle;
+    public bool HasTask => CurrentTask.State != TaskState.Idle;
 
-    public string TaskTitle => Task.IsRunning
-        ? (string.IsNullOrWhiteSpace(Task.Title) ? "空闲" : Task.Title)
-        : (Task.State == TaskState.Idle ? "空闲" : (Task.Title ?? "空闲"));
+    public string TaskTitle => CurrentTask.IsRunning
+        ? (string.IsNullOrWhiteSpace(CurrentTask.Title) ? "空闲" : CurrentTask.Title)
+        : (CurrentTask.State == TaskState.Idle ? "空闲" : (CurrentTask.Title ?? "空闲"));
 
-    public string TaskPercentText => Task.IsIndeterminate
+    public string TaskPercentText => CurrentTask.IsIndeterminate
         ? "---"
-        : $"{Math.Clamp((int)Math.Round(Task.Percent), 0, 100)}%";
+        : $"{Math.Clamp((int)Math.Round(CurrentTask.Percent), 0, 100)}%";
 
-    public void ReportTask(BackgroundTaskProgress progress) => Task = progress;
+    public void ReportTask(BackgroundTaskProgress progress) => CurrentTask = progress;
 
     // ---------------- 快捷打开 ----------------
 
