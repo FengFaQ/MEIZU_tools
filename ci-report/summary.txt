@@ -1,0 +1,8 @@
+job_status=failure
+event=push
+ref=refs/heads/main
+sha=371abe73fb40b3a158a1f9ca8ad0474fa3680b93
+run_id=43572274506
+run_number=1
+actor=FengFaQ
+time=2026-11-14T07:42:49.8710672Z
