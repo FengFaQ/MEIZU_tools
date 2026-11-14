@@ -1,31 +1,28 @@
-using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MeiyouToolbox.Views;
 
-/// <summary>占位页视图模型：标题、说明与图标标识。</summary>
+/// <summary>
+/// 占位页视图模型。<para>
+/// 注意：Avalonia 在 XAML 里用 <c>&lt;views:PlaceholderViewModel Title=".." /&gt;</c> 实例化时
+/// **要求存在公共无参构造函数**（只有有参构造会报
+/// AVLN3000: Unable to find public constructor）。因此这里是无参构造 + 可写属性。
+/// </para>
+/// </summary>
 public sealed partial class PlaceholderViewModel : ObservableObject
 {
-    public PlaceholderViewModel(string title, string description, string iconKind)
-    {
-        Title = title;
-        Description = description;
-        IconKind = iconKind;
-    }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFlashIcon), nameof(IsBackupIcon), nameof(IsManageIcon), nameof(IsSettingsIcon))]
+    private string _iconKind = string.Empty;
 
-    public string Title { get; }
-    public string Description { get; }
+    [ObservableProperty]
+    private string _title = string.Empty;
 
-    /// <summary>图标标识（与 Lucide 名称对应）。界面按名分支渲染，见 PlaceholderView.axaml 注释。</summary>
-    public string IconKind { get; }
+    [ObservableProperty]
+    private string _description = string.Empty;
 
     public bool IsFlashIcon => IconKind == "Zap";
     public bool IsBackupIcon => IconKind == "HardDriveDownload";
     public bool IsManageIcon => IconKind == "Wrench";
     public bool IsSettingsIcon => IconKind == "Settings";
-}
-
-public partial class PlaceholderView : UserControl
-{
-    public PlaceholderView() => InitializeComponent();
 }
