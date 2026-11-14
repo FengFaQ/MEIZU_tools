@@ -157,7 +157,7 @@ warning ARCL002: LucideIcon.Kind is bound here, so the generator cannot tell whi
 - 也可 `<LucideIconsIncludeAll>true</LucideIconsIncludeAll>`（体积变大）
 
 **这套库的图标名有 2141 个枚举成员，写错名字也是静默失败** —— 已把权威清单存到
-`C:\Users\Administrator\Documents\dsh\_lucide_check\LucideIconKind.g.cs`，用前先校验。
+`C:\Users\Administrator\Documents\dsh\MEIZU_tools\reference\_lucide_check\LucideIconKind.g.cs`，用前先校验。
 
 ### 0.8 其余两条
 

@@ -37,7 +37,7 @@
 | 项 | 值 |
 |---|---|
 | 仓库 | https://github.com/FengFaQ/MEIZU_tools |
-| 本地目录 | `C:\Users\Administrator\Documents\dsh\meiyou-toolbox` |
+| 本地目录 | `C:\Users\Administrator\Documents\dsh\MEIZU_tools\repo` |
 | 分支 | `main`（源码）/ `dist`（CI 产物，自动推送） |
 | SSH 密钥 | `C:\Users\Administrator\.ssh\162636`，口令 `162636` |
 | SSH 通路 | `ssh.github.com:443` |
@@ -51,7 +51,7 @@ New-Item -ItemType Directory -Force -Path $askDir | Out-Null
 Set-Content "$askDir\askpass.cmd" '@echo 162636' -Encoding Ascii
 $env:SSH_ASKPASS="$askDir\askpass.cmd"; $env:SSH_ASKPASS_REQUIRE='force'; $env:DISPLAY='dsh'
 $env:Path="$askDir;$env:Path"
-cd C:\Users\Administrator\Documents\dsh\meiyou-toolbox
+cd C:\Users\Administrator\Documents\dsh\MEIZU_tools\repo
 git config core.sshCommand "ssh -F C:/Users/Administrator/.ssh/config"
 git add -A; git commit -m "..."; git push origin main
 ```
@@ -128,8 +128,9 @@ BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
 ## 四、目录结构
 
 ```
-C:\Users\Administrator\Documents\dsh\
-├── meiyou-toolbox\                 ← 本项目（git 仓库）
+C:\Users\Administrator\Documents\dsh\MEIZU_tools\   ← 唯一本地根目录
+├── README.md                       ← 工作区总览与约定
+├── repo\                           ← Git 仓库（= 本文件所在目录）
 │   ├── MEMORY.md                   ← 本文件
 │   ├── PITFALLS.md                 ← 踩坑清单（写功能前必读）
 │   ├── README.md
