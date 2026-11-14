@@ -16,14 +16,26 @@ public partial class MainWindow : Window
     {
         base.OnOpened(e);
 
-        // 首次截图（便于远程确认渲染效果），失败不影响使用。
-        if (DataContext is MainViewModel vm && vm.CaptureHandler is { } capture)
+        // 首次截图：便于远程确认渲染效果，失败不影响正常使用。
+        if (DataContext is not MainViewModel vm)
         {
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(1200).ConfigureAwait(false);
-                await capture().ConfigureAwait(false);
-            });
+            return;
         }
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1500).ConfigureAwait(false);
+
+            // CaptureHandler 由 MainView 在可视树挂载后赋值，这里可能还没就绪，重试几次。
+            for (var i = 0; i < 10 && vm.CaptureHandler is null; i++)
+            {
+                await Task.Delay(200).ConfigureAwait(false);
+            }
+
+            if (vm.CaptureHandler is { } capture)
+            {
+                await capture().ConfigureAwait(false);
+            }
+        });
     }
 }
