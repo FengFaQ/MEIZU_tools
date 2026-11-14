@@ -4,6 +4,78 @@
 
 ---
 
+## 零之前：界面层踩坑（2026-11-14 晚，用户实测反馈后修复）
+
+### A. 白字白底 —— 不要自造颜色，全用 Arc Design Token
+
+**症状**：卡片、快捷按钮的文字看不见（鼠标悬停才隐约可见）。
+**根因**：我自制了 `AppSurface` / `AppForeground` 画刷，而 TKCode.Arc 在运行时
+把 Design Token 注册进 `Application.Resources`。系统处于**暗色模式**时
+Arc 令牌给出浅色文字，而我硬编码了白色背景 → 白字白底。
+**正确做法**：
+1. 外观固定 `ArcAppearance.Light`（`AppSetup.cs` 的 `.WithTheme(...)`）
+2. 窗口 `Background="White"`
+3. **所有颜色/字号一律用令牌**：
+   `Foreground="{arc:ArcDesignTokenResource Foreground}"`
+   `Foreground="{arc:ArcDesignTokenResource TextSecondary}"`
+   `FontSize="{arc:ArcDesignTokenResource TypeSM}"`
+4. **不要**自己定义 SolidColorBrush 画刷资源
+
+### B. 用 `arc:Card` / `arc:Button`，不要手搓 Border + Button
+
+手搓的 Border 没有跟随主题的背景/边框/圆角，视觉也不统一。
+`arc:Card` 自带 Title/Description/圆角/边框/阴影，`arc:Button` 有
+`Variant = Primary | Secondary | Ghost | Danger | Text`。
+
+**已核实的 token 白名单**（其它名字不存在，写错编译不报错但值取不到）：
+`Foreground` `TextSecondary` `TextMuted` `Surface` `SurfaceRaised` `SurfaceMuted`
+`Border` `BorderSubtle` `BorderStrong` `TypeXS` `TypeSM` `TypeBase` `TypeLG` `TypeXL`
+
+> 注意：**没有** `SurfaceHover`、**没有** `Type2XL`。我第一版就写错了这两个。
+
+### C. 验证界面不要截桌面
+
+`CopyFromScreen` 会被其它窗口遮挡，反而截到浏览器/QQ，浪费好几轮。
+**正确做法**：程序内置截图 —— `RenderTargetBitmap.Render(window)`，
+输出到 `screenshots\`。已实现为 `ScreenshotService`。
+
+### D. `CaptureHandler` 绑定时机
+
+`OnDataContextChanged` 时控件还没挂上可视树，`TopLevel.GetTopLevel(this)` 返回 null，
+导致截图能力一直是 null、点按钮无反应。
+**正确做法**：在 `AttachedToVisualTree` 之后再绑定，且调用方要带重试。
+
+### E. 窗口尺寸不能等于屏幕尺寸
+
+设成 1280x820 时实际窗口是 1295x817（含边框/DPI 缩放），
+**超出 1280x800 屏幕**，右侧窗口按钮和底部「设置」被裁掉。
+用 1180x740、最小 960x600。
+
+### F. 启动即崩溃且无窗口 —— 看 stderr，不要猜
+
+`Start-Process -RedirectStandardError` 能直接拿到 .NET 异常堆栈。
+我第一轮就是靠它定位到 `KeyNotFoundException: Static resource 'StatusDotConverter' not found`。
+根因：转换器只定义在 `MainView.Resources`，而 `OverviewView` 构造时父级资源字典不可用。
+**做法**：`StaticResource` 引用的东西一律注册到 `App.axaml` 的 `Application.Resources`；
+另外加了 `AppDiagnostics` 把未处理异常写进 `%LOCALAPPDATA%\MeiyouToolbox\logs\crash-*.log`。
+
+### G. 跨线程更新 UI → 原生崩溃 0xe0434352
+
+在 `Task.Run` 的 async 回调里直接改绑定到界面的 `ObservableCollection` 和属性，
+表现为窗口一闪 + 原生 `0xe0434352`。
+**做法**：
+- `await ... .ConfigureAwait(true)` 回到 UI 上下文
+- 或在改集合/属性前 `if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(...); return; }`
+
+### H. 属性名遮蔽 BCL —— 又一个实例
+
+`IScreenshotService.Directory` 属性让 `Directory.CreateDirectory(...)`
+解析到 `string` 上，报 `CS1929`。
+**已被这套写法坑过三种**：`Task`（属性）、`AppVersion`（静态类）、`Directory`（属性）。
+**规则**：成员名不要用 `Task`、`Action`、`Timer`、`Path`、`File`、`Directory`、`Console`、`Environment`。
+
+---
+
 ## 零、编译期踩坑实录（2026-11-14，从红到绿共 7 轮）
 
 本地没有 .NET SDK，只能靠 GitHub Actions 反馈，每轮约 4 分钟。

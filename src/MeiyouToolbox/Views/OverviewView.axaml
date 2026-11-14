@@ -31,7 +31,7 @@
                                 <Ellipse Width="10" Height="10" VerticalAlignment="Center"
                                          Fill="{Binding IsConnected, Converter={StaticResource StatusDotConverter}}" />
                                 <TextBlock Text="{Binding StatusText}"
-                                           FontSize="{arc:ArcDesignTokenResource TypeXL}"
+                                           FontSize="{arc:ArcDesignTokenResource TypeLG}"
                                            FontWeight="SemiBold"
                                            Foreground="{arc:ArcDesignTokenResource Foreground}" />
                             </StackPanel>
