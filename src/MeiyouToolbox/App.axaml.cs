@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Microsoft.Extensions.DependencyInjection;
 using MeiyouToolbox.Services;
 using MeiyouToolbox.ViewModels;
 using MeiyouToolbox.Views;

@@ -10,10 +10,16 @@ public enum TaskState
     Cancelled,
 }
 
-/// <summary>一次可长跑的操作（刷写 / 备份 / 回读 …）。</summary>
-public sealed class TaskProgress
+/// <summary>
+/// 一次可长跑的操作（刷写 / 备份 / 回读 …）。
+/// <para>
+/// 注意：类型名刻意不叫 <c>TaskProgress</c>，避免与 <see cref="System.Threading.Tasks.Task"/> 混淆。
+/// 早期命名为 TaskProgress 时，同命名空间内的 `Task.Run(...)` 会被解析到这个类上导致 CS1061。
+/// </para>
+/// </summary>
+public sealed class BackgroundTaskProgress
 {
-    public static TaskProgress Idle { get; } = new();
+    public static BackgroundTaskProgress Idle { get; } = new();
 
     public string Title { get; init; } = string.Empty;
 

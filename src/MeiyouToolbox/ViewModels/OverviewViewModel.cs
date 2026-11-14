@@ -113,7 +113,7 @@ public sealed partial class OverviewViewModel : ObservableObject
     private string _batteryText = "---";
 
     [ObservableProperty]
-    private string _appVersion = AppVersion.Current;
+    private string _appVersion = AppVersionInfo.Current;
 
     public void RefreshHost()
     {
@@ -126,7 +126,7 @@ public sealed partial class OverviewViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TaskTitle), nameof(TaskPercentText), nameof(IsTaskRunning), nameof(HasTask))]
-    private TaskProgress _task = TaskProgress.Idle;
+    private BackgroundTaskProgress _task = BackgroundTaskProgress.Idle;
 
     public bool IsTaskRunning => Task.IsRunning;
 
@@ -140,7 +140,7 @@ public sealed partial class OverviewViewModel : ObservableObject
         ? "---"
         : $"{Math.Clamp((int)Math.Round(Task.Percent), 0, 100)}%";
 
-    public void ReportTask(TaskProgress progress) => Task = progress;
+    public void ReportTask(BackgroundTaskProgress progress) => Task = progress;
 
     // ---------------- 快捷打开 ----------------
 

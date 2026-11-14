@@ -21,7 +21,7 @@ public sealed class HostInfoService : IHostInfoService
     public HostStatus GetStatus() => new(
         TryGetBatteryPercent(out var percent, out var charging) ? percent : null,
         charging,
-        AppVersion.Current);
+        AppVersionInfo.Current);
 
     private static bool TryGetBatteryPercent(out int percent, out bool charging)
     {
@@ -82,8 +82,8 @@ public sealed class HostInfoService : IHostInfoService
     }
 }
 
-public static class AppVersion
+public static class AppVersionInfo
 {
     public static string Current { get; } =
-        typeof(AppVersion).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+        typeof(AppVersionInfo).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 }
