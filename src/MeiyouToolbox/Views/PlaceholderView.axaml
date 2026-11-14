@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
-             xmlns:vm="using:MeiyouToolbox.Views"
+             xmlns:vm="using:MeiyouToolbox.ViewModels"
              x:Class="MeiyouToolbox.Views.PlaceholderView"
              x:DataType="vm:PlaceholderViewModel">
     <!--
