@@ -31,9 +31,9 @@ libSkiaSharp.dll	11628896
 libSkiaSharp.pdb	84033536
 Markdig.dll	501760
 MeiyouToolbox.deps.json	29738
-MeiyouToolbox.dll	1087488
+MeiyouToolbox.dll	1088000
 MeiyouToolbox.exe	255488
-MeiyouToolbox.pdb	225236
+MeiyouToolbox.pdb	225500
 MeiyouToolbox.runtimeconfig.json	487
 MicroCom.Runtime.dll	15360
 Microsoft.Extensions.DependencyInjection.Abstractions.dll	66312
@@ -55,6 +55,7 @@ TKCode.Arc.Foundation.dll	67584
 TKCode.Arc.Icons.Lucide.dll	68608
 Tmds.DBus.Protocol.dll	232960
 ZstdSharp.dll	397312
+Assets\devices.csv	1942
 Tools\Android\bootctl	19832
 Tools\Android\busybox	1885888
 Tools\Android\misc_tofastbootd_2.img	8192
