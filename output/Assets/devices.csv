@@ -1,5 +1,5 @@
 product,model,cpu,storagetype,blplan,parlayout,bootpar,edlplan
-M15,魅族 15（M15）,骁龙 626,emmc,auth-private,aonly,boot,key
+M15,魅族 15,骁龙 626,emmc,auth-private,aonly,boot,key
 16S,魅族 16S,骁龙 855,ufs,auth-private,aonly,boot,key
 16Spro,魅族 16S Pro,骁龙 855+,ufs,auth-private,aonly,boot,key
 16T,魅族 16T,骁龙 855,ufs,odm-1,aonly,boot,key
