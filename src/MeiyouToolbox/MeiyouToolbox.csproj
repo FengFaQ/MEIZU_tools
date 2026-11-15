@@ -47,6 +47,14 @@
         <PackageReference Include="TKCode.Arc.Icons.Lucide" Version="1.1.0" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+        <!--
+            payload.bin 解包用的解压器。OTA 里的数据段可能是未压缩(REPLACE)、
+            bzip2、xz 或 zstd 四种，SharpCompress 覆盖前三种，ZstdSharp 补 zstd。
+            不用 Google.Protobuf：manifest 的 schema 固定，手写变长整数读取
+            更轻量，也不会因为 protoc 版本变化而失效（见 Services/PayloadService.cs）。
+        -->
+        <PackageReference Include="SharpCompress" Version="0.44.0" />
+        <PackageReference Include="ZstdSharp.Port" Version="0.8.7" />
     </ItemGroup>
 
     <ItemGroup>
