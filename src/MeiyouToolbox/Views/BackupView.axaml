@@ -8,320 +8,331 @@
              x:Class="MeiyouToolbox.Views.BackupView"
              x:DataType="vm:BackupViewModel">
 
-    <ScrollViewer>
-        <StackPanel Margin="20" Spacing="16">
+    <Grid Margin="16" RowDefinitions="Auto,*" RowSpacing="10">
 
-            <!-- ============ 标题 + 连接状态 ============ -->
-            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                <StackPanel Spacing="4">
-                    <TextBlock Text="备份"
-                               FontSize="{arc:ArcDesignTokenResource TypeXL}"
-                               FontWeight="SemiBold"
-                               Foreground="{arc:ArcDesignTokenResource Foreground}" />
-                    <TextBlock Text="把分区表与镜像从设备回读到电脑。备份出来的目录本身就是一套可线刷的包。"
-                               FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                               Foreground="{arc:ArcDesignTokenResource TextMuted}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
+        <!-- 标题 + 连接状态 -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+            <StackPanel Spacing="2">
+                <TextBlock Text="备份"
+                           FontSize="{arc:ArcDesignTokenResource TypeXL}"
+                           FontWeight="SemiBold"
+                           Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                <TextBlock Text="把分区表与镜像从设备回读到电脑。备份出来的目录本身就是一套可线刷的包。"
+                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                           Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
-                            VerticalAlignment="Center">
-                    <Border Padding="10,5" CornerRadius="6"
-                            Background="{arc:ArcDesignTokenResource SurfaceMuted}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <lucide:LucideIcon Kind="Usb" Size="14" />
-                            <TextBlock Text="{Binding ConnectionText}"
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                        VerticalAlignment="Center">
+                <Border Padding="9,4" CornerRadius="6"
+                        Background="{arc:ArcDesignTokenResource SurfaceMuted}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <lucide:LucideIcon Kind="Usb" Size="13" />
+                        <TextBlock Text="{Binding ConnectionText}"
+                                   FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                   Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                    </StackPanel>
+                </Border>
+                <arc:Button Variant="Secondary" Command="{Binding RefreshConnectionCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <lucide:LucideIcon Kind="RefreshCw" Size="13" />
+                        <TextBlock Text="刷新" />
+                    </StackPanel>
+                </arc:Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- 双列主体 -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+
+            <!-- 左列 -->
+            <ScrollViewer Grid.Column="0">
+                <StackPanel Spacing="10">
+
+                    <!-- 备份范围 -->
+                    <arc:Card Title="备份范围"
+                              Description="全分区备份用于留底与救砖；分区表很小；QCN 是基带数据，不在普通分区里。">
+                        <StackPanel Spacing="8" Margin="0,6,0,0">
+
+                            <ComboBox ItemsSource="{Binding Scopes}"
+                                      SelectedItem="{Binding SelectedScope}"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="选择备份范围">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:BackupScopeOption">
+                                        <StackPanel Spacing="1">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <TextBlock Text="{Binding ScopeHint}"
                                        FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                       Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                       TextWrapping="Wrap" />
+
+                            <!-- QCN 专用提示 -->
+                            <Border Padding="10,8" CornerRadius="6"
+                                    Background="{arc:ArcDesignTokenResource SurfaceMuted}"
+                                    IsVisible="{Binding IsQcnScope}">
+                                <StackPanel Spacing="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <lucide:LucideIcon Kind="Info" Size="13" />
+                                        <TextBlock Text="QCN 需要设备进入 DIAG 模式"
+                                                   FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                                    </StackPanel>
+                                    <TextBlock Text="拨号盘输入 *#*#88#*#* 选择 QPST；或输入 *#*#3838664#*#* 选择 usb mode 后再选 QPST。"
+                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
-                    </Border>
-                    <arc:Button Variant="Secondary" Command="{Binding RefreshConnectionCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <lucide:LucideIcon Kind="RefreshCw" Size="14" />
-                            <TextBlock Text="刷新" />
+                    </arc:Card>
+
+                    <!-- 机型与保存位置 -->
+                    <arc:Card Title="机型与保存位置"
+                              Description="机型只用来生成目录名与备份清单，不影响读取。每次备份另建带时间戳的子文件夹。">
+                        <StackPanel Spacing="8" Margin="0,6,0,0">
+
+                            <ComboBox ItemsSource="{Binding Profiles}"
+                                      SelectedItem="{Binding SelectedProfile}"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="选择机型（可选）">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:DeviceProfile">
+                                        <TextBlock Text="{Binding DisplayName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <arc:Input IsLabelVisible="False" Grid.Column="0"
+                                           Text="{Binding TargetDirectory}"
+                                           Placeholder="备份保存到哪个目录"
+                                           Height="32" />
+                                <arc:Button Grid.Column="1" Variant="Secondary" Click="OnPickDirectory">
+                                    <lucide:LucideIcon Kind="FolderOpen" Size="13" />
+                                </arc:Button>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <arc:Input IsLabelVisible="False" Grid.Column="0"
+                                           Text="{Binding EdlPort}"
+                                           Placeholder="9008 端口（留空自动检测）"
+                                           Height="32" />
+                                <arc:Button Grid.Column="1" Variant="Secondary" Click="OnOpenTargetDirectory">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <lucide:LucideIcon Kind="FolderOpen" Size="13" />
+                                        <TextBlock Text="打开目录" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    </StackPanel>
+                                </arc:Button>
+                            </Grid>
                         </StackPanel>
-                    </arc:Button>
+                    </arc:Card>
+
+                    <!-- 恢复 QCN -->
+                    <arc:Card Title="恢复 QCN"
+                              Description="把之前备份的 .qcn 写回设备。同样需要设备处于 DIAG 模式。">
+                        <StackPanel Spacing="8" Margin="0,6,0,0">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <arc:Input IsLabelVisible="False" Grid.Column="0"
+                                           Text="{Binding QcnFilePath}"
+                                           Placeholder="选择 .qcn 备份文件"
+                                           Height="32" />
+                                <arc:Button Grid.Column="1" Variant="Secondary" Click="OnPickQcnFile">
+                                    <lucide:LucideIcon Kind="FolderOpen" Size="13" />
+                                </arc:Button>
+                            </Grid>
+
+                            <arc:Button Variant="Danger" HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding RestoreQcnCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <lucide:LucideIcon Kind="Upload" Size="13" />
+                                    <TextBlock Text="写入 QCN" />
+                                </StackPanel>
+                            </arc:Button>
+                        </StackPanel>
+                    </arc:Card>
+
                 </StackPanel>
-            </Grid>
+            </ScrollViewer>
 
-            <!-- ============ 备份什么 ============ -->
-            <arc:Card Title="备份范围"
-                      Description="全分区备份用于留底与救砖；分区表很小，改分区前先备份；QCN 是基带数据，不在普通分区里。">
-                <StackPanel Spacing="12" Margin="0,8,0,0">
+            <!-- 右列 -->
+            <ScrollViewer Grid.Column="1">
+                <StackPanel Spacing="10">
 
-                    <ComboBox ItemsSource="{Binding Scopes}"
-                              SelectedItem="{Binding SelectedScope}"
-                              HorizontalAlignment="Stretch"
-                              PlaceholderText="选择备份范围">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:BackupScopeOption">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding Description}"
+                    <!-- 分区列表 -->
+                    <arc:Card Title="分区列表"
+                              Description="从设备读出的 GPT 分区表。只有 9008 模式能读；读取后可单独选一个分区备份。">
+                        <StackPanel Spacing="8" Margin="0,6,0,0">
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding PartitionStatus}"
+                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap" />
+                                <arc:Button Grid.Column="1" Variant="Secondary"
+                                            Command="{Binding ListPartitionsCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <lucide:LucideIcon Kind="HardDrive" Size="13" />
+                                        <TextBlock Text="读取分区表" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    </StackPanel>
+                                </arc:Button>
+                            </Grid>
+
+                            <Border BorderThickness="1"
+                                    BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
+                                    CornerRadius="6"
+                                    MaxHeight="230"
+                                    IsVisible="{Binding HasPartitions}">
+                                <ScrollViewer>
+                                    <StackPanel>
+                                        <!-- 表头 -->
+                                        <Grid ColumnDefinitions="46,*,92,86,74"
+                                              Background="{arc:ArcDesignTokenResource SurfaceMuted}"
+                                              Height="28">
+                                            <TextBlock Grid.Column="0" Text="LUN" Margin="8,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                            <TextBlock Grid.Column="1" Text="分区" Margin="8,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                            <TextBlock Grid.Column="2" Text="起始扇区" Margin="8,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                            <TextBlock Grid.Column="3" Text="扇区数" Margin="8,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                            <TextBlock Grid.Column="4" Text="大小" Margin="8,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                        </Grid>
+
+                                        <ListBox ItemsSource="{Binding Partitions}"
+                                                 SelectedItem="{Binding SelectedPartition}"
+                                                 Background="Transparent"
+                                                 BorderThickness="0">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:PartitionRow">
+                                                    <Grid ColumnDefinitions="46,*,92,86,74" Height="26">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Lun}"
+                                                                   Margin="8,0" VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                                                   Margin="8,0" VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                                                   Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding StartSector}"
+                                                                   Margin="8,0" VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                                        <TextBlock Grid.Column="3" Text="{Binding SectorCount}"
+                                                                   Margin="8,0" VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                                        <TextBlock Grid.Column="4" Text="{Binding SizeText}"
+                                                                   Margin="8,0" VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </arc:Card>
+
+                    <!-- 当前任务 -->
+                    <arc:Card Title="当前任务">
+                        <StackPanel Spacing="8" Margin="0,6,0,0">
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="{Binding TaskTitle}"
+                                               FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                               FontWeight="SemiBold"
+                                               Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                                    <TextBlock Text="{Binding LastBackupPath}"
                                                FontSize="{arc:ArcDesignTokenResource TypeXS}"
                                                Foreground="{arc:ArcDesignTokenResource TextMuted}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
 
-                    <TextBlock Text="{Binding ScopeHint}"
-                               FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
-                               TextWrapping="Wrap" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                    <arc:Button Variant="Text"
+                                                Command="{Binding CancelCommand}"
+                                                IsVisible="{Binding IsBusy}">
+                                        <TextBlock Text="取消" />
+                                    </arc:Button>
+                                    <arc:Button Variant="Primary"
+                                                Command="{Binding StartBackupCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <lucide:LucideIcon Kind="Download" Size="13" />
+                                            <TextBlock Text="开始备份" />
+                                        </StackPanel>
+                                    </arc:Button>
+                                </StackPanel>
+                            </Grid>
 
-                    <!-- QCN 专用提示 -->
-                    <Border Padding="12,10" CornerRadius="6"
-                            Background="{arc:ArcDesignTokenResource SurfaceMuted}"
-                            IsVisible="{Binding IsQcnScope}">
-                        <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <lucide:LucideIcon Kind="Info" Size="14" />
-                                <TextBlock Text="QCN 需要设备进入 DIAG 模式"
-                                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                           FontWeight="SemiBold"
-                                           Foreground="{arc:ArcDesignTokenResource Foreground}" />
-                            </StackPanel>
-                            <TextBlock Text="拨号盘输入 *#*#88#*#* 选择 QPST；或输入 *#*#3838664#*#* 选择 usb mode 后再选 QPST。进入后回到这里点开始。"
-                                       FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                            <ProgressBar Minimum="0" Maximum="100"
+                                         Value="{Binding TaskPercent}"
+                                         IsIndeterminate="{Binding TaskIndeterminate}"
+                                         Height="5" />
+
+                            <TextBlock Text="{Binding TaskMessage}"
+                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
                                        Foreground="{arc:ArcDesignTokenResource TextSecondary}"
                                        TextWrapping="Wrap" />
+
+                            <Border MaxHeight="150"
+                                    Background="{arc:ArcDesignTokenResource SurfaceMuted}"
+                                    CornerRadius="6"
+                                    Padding="8"
+                                    IsVisible="{Binding IsBusy}">
+                                <ScrollViewer>
+                                    <ItemsControl ItemsSource="{Binding LogLines}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="sys:String">
+                                                <TextBlock Text="{Binding}"
+                                                           FontFamily="Consolas,monospace"
+                                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                                           TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
                         </StackPanel>
-                    </Border>
+                    </arc:Card>
+
                 </StackPanel>
-            </arc:Card>
-
-            <!-- ============ 机型与保存位置 ============ -->
-            <arc:Card Title="机型与保存位置"
-                      Description="机型只用来生成目录名与备份清单，不影响读取。目录里每次备份都会另建一个带时间戳的子文件夹。">
-                <StackPanel Spacing="12" Margin="0,8,0,0">
-
-                    <ComboBox ItemsSource="{Binding Profiles}"
-                              SelectedItem="{Binding SelectedProfile}"
-                              HorizontalAlignment="Stretch"
-                              PlaceholderText="选择机型（可选）">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:DeviceProfile">
-                                <TextBlock Text="{Binding DisplayName}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <arc:Input IsLabelVisible="False" Grid.Column="0" Text="{Binding TargetDirectory}"
-                                 Placeholder="备份保存到哪个目录"
-                                 Height="34" />
-                        <arc:Button Grid.Column="1" Variant="Secondary"
-                                    Click="OnPickDirectory">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <lucide:LucideIcon Kind="FolderOpen" Size="14" />
-                                <TextBlock Text="浏览" />
-                            </StackPanel>
-                        </arc:Button>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <arc:Input IsLabelVisible="False" Grid.Column="0" Text="{Binding EdlPort}"
-                                 Placeholder="9008 端口（留空自动检测）"
-                                 Height="34" />
-                        <arc:Button Grid.Column="1" Variant="Secondary"
-                                    Click="OnOpenTargetDirectory">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <lucide:LucideIcon Kind="FolderOpen" Size="14" />
-                                <TextBlock Text="打开备份目录" />
-                            </StackPanel>
-                        </arc:Button>
-                    </Grid>
-                </StackPanel>
-            </arc:Card>
-
-            <!-- ============ 分区列表 ============ -->
-            <arc:Card Title="分区列表"
-                      Description="从设备读出的 GPT 分区表。只有 9008 模式能读；读取成功后可以单独选一个分区备份。">
-                <StackPanel Spacing="10" Margin="0,8,0,0">
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding PartitionStatus}"
-                                   FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}"
-                                   VerticalAlignment="Center"
-                                   TextWrapping="Wrap" />
-                        <arc:Button Grid.Column="1" Variant="Secondary"
-                                    Command="{Binding ListPartitionsCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <lucide:LucideIcon Kind="HardDrive" Size="14" />
-                                <TextBlock Text="读取分区表" />
-                            </StackPanel>
-                        </arc:Button>
-                    </Grid>
-
-                    <Border BorderThickness="1"
-                            BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
-                            CornerRadius="6"
-                            MaxHeight="260"
-                            IsVisible="{Binding HasPartitions}">
-                        <ScrollViewer>
-                            <StackPanel>
-                                <!-- 表头 -->
-                                <Grid ColumnDefinitions="60,*,120,110,100"
-                                      Background="{arc:ArcDesignTokenResource SurfaceMuted}"
-                                      Height="32">
-                                    <TextBlock Grid.Column="0" Text="LUN" Margin="10,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                               FontWeight="SemiBold"
-                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                    <TextBlock Grid.Column="1" Text="分区" Margin="10,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                               FontWeight="SemiBold"
-                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                    <TextBlock Grid.Column="2" Text="起始扇区" Margin="10,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                               FontWeight="SemiBold"
-                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                    <TextBlock Grid.Column="3" Text="扇区数" Margin="10,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                               FontWeight="SemiBold"
-                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                    <TextBlock Grid.Column="4" Text="大小" Margin="10,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                               FontWeight="SemiBold"
-                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                </Grid>
-
-                                <ListBox ItemsSource="{Binding Partitions}"
-                                         SelectedItem="{Binding SelectedPartition}"
-                                         Background="Transparent"
-                                         BorderThickness="0">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:PartitionRow">
-                                            <Grid ColumnDefinitions="60,*,120,110,100" Height="30">
-                                                <TextBlock Grid.Column="0" Text="{Binding Lun}"
-                                                           Margin="10,0" VerticalAlignment="Center"
-                                                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Name}"
-                                                           Margin="10,0" VerticalAlignment="Center"
-                                                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                                           Foreground="{arc:ArcDesignTokenResource Foreground}" />
-                                                <TextBlock Grid.Column="2" Text="{Binding StartSector}"
-                                                           Margin="10,0" VerticalAlignment="Center"
-                                                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                                <TextBlock Grid.Column="3" Text="{Binding SectorCount}"
-                                                           Margin="10,0" VerticalAlignment="Center"
-                                                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                                <TextBlock Grid.Column="4" Text="{Binding SizeText}"
-                                                           Margin="10,0" VerticalAlignment="Center"
-                                                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </Border>
-                </StackPanel>
-            </arc:Card>
-
-            <!-- ============ QCN 恢复 ============ -->
-            <arc:Card Title="恢复 QCN"
-                      Description="把之前备份的 .qcn 写回设备。同样需要设备处于 DIAG 模式。">
-                <StackPanel Spacing="10" Margin="0,8,0,0">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <arc:Input IsLabelVisible="False" Grid.Column="0" Text="{Binding QcnFilePath}"
-                                 Placeholder="选择 .qcn 备份文件"
-                                 Height="34" />
-                        <arc:Button Grid.Column="1" Variant="Secondary" Click="OnPickQcnFile">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <lucide:LucideIcon Kind="FolderOpen" Size="14" />
-                                <TextBlock Text="浏览" />
-                            </StackPanel>
-                        </arc:Button>
-                    </Grid>
-
-                    <arc:Button Variant="Danger" HorizontalAlignment="Left"
-                                Command="{Binding RestoreQcnCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <lucide:LucideIcon Kind="Upload" Size="14" />
-                            <TextBlock Text="写入 QCN" />
-                        </StackPanel>
-                    </arc:Button>
-                </StackPanel>
-            </arc:Card>
-
-            <!-- ============ 开始 + 当前任务 ============ -->
-            <arc:Card Title="当前任务">
-                <StackPanel Spacing="10" Margin="0,8,0,0">
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="{Binding TaskTitle}"
-                                       FontSize="{arc:ArcDesignTokenResource TypeBase}"
-                                       FontWeight="SemiBold"
-                                       Foreground="{arc:ArcDesignTokenResource Foreground}" />
-                            <TextBlock Text="{Binding LastBackupPath}"
-                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                       Foreground="{arc:ArcDesignTokenResource TextMuted}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <arc:Button Variant="Text"
-                                        Command="{Binding CancelCommand}"
-                                        IsVisible="{Binding IsBusy}">
-                                <TextBlock Text="取消" />
-                            </arc:Button>
-                            <arc:Button Variant="Primary"
-                                        Command="{Binding StartBackupCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <lucide:LucideIcon Kind="Download" Size="14" />
-                                    <TextBlock Text="开始备份" />
-                                </StackPanel>
-                            </arc:Button>
-                        </StackPanel>
-                    </Grid>
-
-                    <ProgressBar Minimum="0" Maximum="100"
-                                 Value="{Binding TaskPercent}"
-                                 IsIndeterminate="{Binding TaskIndeterminate}"
-                                 Height="6" />
-
-                    <TextBlock Text="{Binding TaskMessage}"
-                               FontSize="{arc:ArcDesignTokenResource TypeSM}"
-                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
-                               TextWrapping="Wrap" />
-
-                    <Border MaxHeight="220"
-                            Background="{arc:ArcDesignTokenResource SurfaceMuted}"
-                            CornerRadius="6"
-                            Padding="10"
-                            IsVisible="{Binding IsBusy}">
-                        <ScrollViewer>
-                            <ItemsControl ItemsSource="{Binding LogLines}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="sys:String">
-                                        <TextBlock Text="{Binding}"
-                                                   FontFamily="Consolas,monospace"
-                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}"
-                                                   TextWrapping="Wrap" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Border>
-                </StackPanel>
-            </arc:Card>
-
-        </StackPanel>
-    </ScrollViewer>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
 </UserControl>

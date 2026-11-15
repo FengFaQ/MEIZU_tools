@@ -34,6 +34,13 @@
     <ItemGroup>
         <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
         <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.6" />
+        <!--
+            Avalonia 12 把 FluentTheme 拆成了独立包，Avalonia.Desktop 不再传递引用。
+            必须有它：TKCode.Arc 的基础主题只覆盖 9 个宿主类型，原生
+            ComboBox / CheckBox / ProgressBar / ListBox 没有 ControlTheme，
+            不引入任何基础主题时这些控件在界面上完全不渲染（且不报错）。
+        -->
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
         <PackageReference Include="TKCode.Arc" Version="1.1.0" />
         <PackageReference Include="TKCode.Arc.Blocks" Version="1.1.0" />
         <PackageReference Include="TKCode.Arc.Fonts" Version="1.1.0" />
