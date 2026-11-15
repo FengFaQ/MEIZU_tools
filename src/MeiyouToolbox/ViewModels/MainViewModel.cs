@@ -24,6 +24,7 @@ public sealed partial class MainViewModel : ObservableObject
         OverviewViewModel overview,
         FlashViewModel flash,
         BackupViewModel backup,
+        ManageViewModel manage,
         SettingsViewModel settings,
         IScreenshotService screenshots,
         IAppLogger logger)
@@ -31,6 +32,7 @@ public sealed partial class MainViewModel : ObservableObject
         Overview = overview;
         Flash = flash;
         Backup = backup;
+        Manage = manage;
         Settings = settings;
         _screenshots = screenshots;
         _logger = logger;
@@ -44,6 +46,7 @@ public sealed partial class MainViewModel : ObservableObject
         Overview = null!;
         Flash = null!;
         Backup = null!;
+        Manage = null!;
         Settings = null!;
     }
 
@@ -52,6 +55,8 @@ public sealed partial class MainViewModel : ObservableObject
     public FlashViewModel Flash { get; }
 
     public BackupViewModel Backup { get; }
+
+    public ManageViewModel Manage { get; }
 
     public SettingsViewModel Settings { get; }
 

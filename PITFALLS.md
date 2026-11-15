@@ -300,8 +300,11 @@ XML 结构都是 `<program filename=.. physical_partition_number=.. start_sector
 备份 XML 里 `start_sector="NUM_DISK_SECTORS-33."`（末尾点号是语法一部分）
 
 ### 21. 刷完必须设 `setbootablestoragedrive`
-- ufs → value=1，emmc → value=2
+- **emmc / spinor → value=0**
+- **ufs → 按当前槽位：aonly 或 a → 1，b → 2**
+- 判据在 `bin\mzbox.bat:275-305`：先 `slot qcedl chk` 取 `slot__cur` 再决定
 - **漏了会"刷成功但不开机"**
+- ⚠️ 早先误记为"ufs→1、emmc→2"，已在 `FlashService.SetBootableStorageDriveAsync` 修正
 
 ### 22. persist 分区绝不能写回
 `persist` 存 TEE 密钥、指纹/传感器校准。覆盖后**指纹永久失效且不可修复**。
@@ -328,3 +331,62 @@ XML 结构都是 `<program filename=.. physical_partition_number=.. start_sector
 ### 26. QCN 工具成功判定字符串
 - 读：`Reading QCN from phone... OK`
 - 写：`Writing Data File to phone... OK`
+
+### 27. `gpttool` 的 `-o` 只对 `convert:` 生效
+`print:` 系列**一律写 stdout**，加 `-o` 会被忽略（不会报错，只是产物不见）。
+要落盘必须自己重定向 stdout。
+另外 `print:qcedl_rawprogramxml` 直接吐出完整 `<program .../>`，
+`start_sector="NUM_DISK_SECTORS-33."`、`start_byte_hex="(512*NUM_DISK_SECTORS)-16896."`
+都已算好，只要自己填 `physical_partition_number`（输出里是空串）。
+
+### 28. GPT 原始数据不能直接解析
+9008 回读的 512KB 原始扇区，必须先
+`gpttool -p raw.bin -f convert:gptmain -o gpt_main<N>.bin`
+转换后才能喂给 `print:default:#insl:sector:10`。
+512KB 常量：emmc `SECTOR_SIZE_IN_BYTES="512" num_partition_sectors="1024"`；
+ufs / spinor `4096` / `128`。`start_sector="0"`、`label="PrimaryGPT"`。
+
+### 29. `[GeneratedRegex]` 不能带实现体
+`private static partial Regex Foo() => ...` **编译失败**。
+只能是 `private static partial Regex Foo();`，逻辑要放到非 partial 方法里分发。
+
+### 30. `[RelayCommand]` 方法只能返回 `Task`，不能返回 `Task<bool>`
+源生成器不支持值返回。需要返回值的逻辑抽成普通 `private async Task<T>`，
+命令方法只 `=> await XxxAsync()` 转发。
+
+### 31. `AppDiagnostics` 只有 `Install()` 和 `Write()`
+没有 `Report`。异常写 `AppDiagnostics.Write(message, ex)`，
+落在 `%LOCALAPPDATA%\MeiyouToolbox\logs\crash-*.log`。
+
+### 32. 没有 `AppServicesHost` 这个类
+要拿服务用 `App.Services.GetService<T>()`。
+
+### 33. `AttachedToVisualTree` 的事件参数类型是 `VisualTreeAttachmentEventArgs`
+写成 `VisualTreeEventArgs` 编译不过。
+
+### 34. 工程没引 `Avalonia.Controls.DataGrid`
+表格只能用「手写表头 Grid + ListBox + ItemTemplate」实现。
+
+### 35. `x:DataType` 不能写 `x:String`
+要写 `xmlns:sys="using:System"` 然后 `x:DataType="sys:String"`。
+
+### 36. ⚠️ 绝不用 PowerShell 读写含中文的源码文件
+PowerShell 5.1 的 `Get-Content` 默认按 **GBK(ANSI)** 解码 UTF-8 文件，
+再 `Set-Content -Encoding utf8` 写回 → **中文全部双重编码损坏**
+（`清理` → `娓呯悊`，`槽位` → `妲戒綅`，`分区` → `鍒嗗尯`）。
+**这种损坏不会产生 U+FFFD**，只查替换字符的检测完全查不出来。
+
+检测要按典型乱码字符：
+```powershell
+$text = [System.IO.File]::ReadAllText($f, [System.Text.Encoding]::UTF8)
+$bad  = $text.Contains('娓') -or $text.Contains('妲') -or $text.Contains('鍒') -or $text.Contains('鎿')
+```
+**规则：一律用 read / edit / write 工具改源码，不经过 PowerShell。**
+
+### 37. `git push` 前必须重建 SSH askpass
+`ssh_askpass: exec(...\askpass.cmd): No such file or directory` 说明脚本被删了。
+`C:\Users\Administrator\Documents\dsh\MEIZU_tools\askpass.cmd` 内容 `@echo 162636`
+（ASCII、无 BOM、无换行）。推送前设：
+```powershell
+$env:SSH_ASKPASS = "...\askpass.cmd"; $env:SSH_ASKPASS_REQUIRE = "force"; $env:DISPLAY = "dsh"
+```

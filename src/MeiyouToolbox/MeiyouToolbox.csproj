@@ -43,7 +43,7 @@
             需要在运行时动态决定、或通过绑定/数据模板选中的图标必须在此显式声明，
             否则不会打包，运行时不显示（且不报错，只在日志留 warning）。
         -->
-        <LucideIcon Include="Activity;Archive;Cable;CircleCheck;CircleX;Cpu;Database;Download;FileArchive;FileDown;FolderDown;FolderOpen;HardDrive;HardDriveDownload;Import;Info;Key;LayoutDashboard;ListChecks;Loader;Lock;MemoryStick;Minus;MonitorCog;Package;PanelLeft;Play;Radio;RefreshCw;RotateCcw;ScanLine;Settings;ShieldCheck;Signal;Smartphone;Square;Terminal;TriangleAlert;Unlock;Upload;Usb;Wand2;Wrench;X;Zap" />
+        <LucideIcon Include="Activity;Archive;ArrowLeftRight;Cable;CircleCheck;CircleX;Cpu;Database;Download;Eraser;FileArchive;FileDown;FolderDown;FolderOpen;HardDrive;HardDriveDownload;Import;Info;Key;Layers;LayoutDashboard;ListChecks;Loader;Lock;MemoryStick;Minus;MonitorCog;Package;Paintbrush;PanelLeft;Play;Radio;RefreshCw;RotateCcw;ScanLine;Settings;ShieldAlert;ShieldCheck;Signal;Smartphone;Square;Terminal;TriangleAlert;Unlock;Upload;Usb;Wand2;Wrench;X;Zap" />
     </ItemGroup>
 
     <ItemGroup>

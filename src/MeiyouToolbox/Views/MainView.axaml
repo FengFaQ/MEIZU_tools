@@ -142,13 +142,7 @@
             </Border>
 
             <Border IsVisible="{Binding IsManage}">
-                <views:PlaceholderView>
-                    <views:PlaceholderView.DataContext>
-                        <vm:PlaceholderViewModel Title="管理"
-                                                 Description="分区表读写、槽位管理、工具箱目录与日志查看。"
-                                                 IconKind="Wrench" />
-                    </views:PlaceholderView.DataContext>
-                </views:PlaceholderView>
+                <views:ManageView DataContext="{Binding Manage}" />
             </Border>
 
             <Border IsVisible="{Binding IsSettings}">

@@ -48,11 +48,16 @@ public static class AppServices
         // 备份相关
         services.AddSingleton<IBackupService, BackupService>();
 
+        // 管理相关
+        services.AddSingleton<ISlotService, SlotService>();
+        services.AddSingleton<ICleanService, CleanService>();
+
         // 视图模型
         services.AddSingleton<OverviewViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<FlashViewModel>();
         services.AddSingleton<BackupViewModel>();
+        services.AddSingleton<ManageViewModel>();
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();
