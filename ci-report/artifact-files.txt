@@ -17,6 +17,7 @@ Avalonia.Native.dll	351232
 Avalonia.OpenGL.dll	128512
 Avalonia.Remote.Protocol.dll	75776
 Avalonia.Skia.dll	125952
+Avalonia.Themes.Fluent.dll	733696
 Avalonia.Vulkan.dll	191488
 Avalonia.Win32.Automation.dll	124928
 Avalonia.Win32.dll	968704
@@ -29,10 +30,10 @@ libonigwrap.dll	541184
 libSkiaSharp.dll	11628896
 libSkiaSharp.pdb	84033536
 Markdig.dll	501760
-MeiyouToolbox.deps.json	27797
-MeiyouToolbox.dll	922112
+MeiyouToolbox.deps.json	28537
+MeiyouToolbox.dll	923648
 MeiyouToolbox.exe	255488
-MeiyouToolbox.pdb	176556
+MeiyouToolbox.pdb	176820
 MeiyouToolbox.runtimeconfig.json	487
 MicroCom.Runtime.dll	15360
 Microsoft.Extensions.DependencyInjection.Abstractions.dll	66312

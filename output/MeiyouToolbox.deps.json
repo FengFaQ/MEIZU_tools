@@ -11,6 +11,7 @@
         "dependencies": {
           "Avalonia.Desktop": "12.1.6",
           "Avalonia.Fonts.Inter": "12.1.6",
+          "Avalonia.Themes.Fluent": "12.1.6",
           "CommunityToolkit.Mvvm": "8.4.0",
           "Microsoft.Extensions.DependencyInjection": "10.0.0",
           "TKCode.Arc": "1.1.0",
@@ -192,6 +193,18 @@
             "assemblyVersion": "12.1.6.0",
             "fileVersion": "12.1.6.0",
             "localPath": "Avalonia.Skia.dll"
+          }
+        }
+      },
+      "Avalonia.Themes.Fluent/12.1.6": {
+        "dependencies": {
+          "Avalonia": "12.1.6"
+        },
+        "runtime": {
+          "lib/net10.0/Avalonia.Themes.Fluent.dll": {
+            "assemblyVersion": "12.1.6.0",
+            "fileVersion": "12.1.6.0",
+            "localPath": "Avalonia.Themes.Fluent.dll"
           }
         }
       },
@@ -581,6 +594,13 @@
       "sha512": "sha512-6Ampu5kpbuhx/tk2aw9DF664q+fOjMjpsF6N76/lulCt/g+Tkoz4rr8dk9lsmHvOI9KQ/dmERO9MrJ5/mVDwlQ==",
       "path": "avalonia.skia/12.1.6",
       "hashPath": "avalonia.skia.12.1.6.nupkg.sha512"
+    },
+    "Avalonia.Themes.Fluent/12.1.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-CafSFU8q6I2ij7VRWy3D5qw3ObrDEOXRqIvFqVuEh7vqk1EC9ob94KYRmbHLZRsyj3Ob2xsF/tgcF5YF2uiKzQ==",
+      "path": "avalonia.themes.fluent/12.1.6",
+      "hashPath": "avalonia.themes.fluent.12.1.6.nupkg.sha512"
     },
     "Avalonia.Win32/12.1.6": {
       "type": "package",
