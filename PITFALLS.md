@@ -412,3 +412,126 @@ Avalonia 读 PNG 最稳，不必让它去解 ICO 容器。
 先 `alpha.point(lambda v: 255 if v > 8 else 0)` 再 `getbbox()`，
 真实边界是 `(114,144,911,867)`，四边留白才均匀。
 另外裁完要**补成正方形**（内容居中、四周留 6% 呼吸空间），否则图标在方形槽位里会变形或偏心。
+
+### 41. ⚠️ Arc 不提供 `TextBox` / `ComboBox` 等输入控件的主题 —— 不引 FluentTheme 就完全不渲染
+`ArcBaseTheme.StyledTypes`（`TKCode.Arc.Core/Theme/Base/ArcBaseTheme.cs:32-36`）**只覆盖 9 个类型**：
+
+```
+ScrollViewer, ScrollBar, ItemsControl, PathIcon, TextSelectionHandle,
+OverlayPopupHost, PopupRoot, EmbeddableControlRoot, Window
+```
+
+`TextBox` / `ComboBox` / `CheckBox` / `ListBox` / `ProgressBar` / `Separator` **都不在其中**。
+`ArcBaseTheme.TryRegister`（`:102-122`）的设计是"让位"：应用若已解析出某类型的默认
+ControlTheme 就不注册该类型，注释明写 "FluentTheme and SimpleTheme in App.axaml do for all of them"。
+
+所以 `App.axaml` 里没有 `<FluentTheme />` 时，这些控件**没有模板 → 界面上完全消失，
+而且不报任何错**，只有截图才看得出来。表现为"输入框整行不见，只剩旁边的按钮"。
+
+修法（两条都要）：
+```xml
+<!-- App.axaml -->
+<Application.Styles>
+    <FluentTheme />
+</Application.Styles>
+```
+```xml
+<!-- csproj：Avalonia 12 把 FluentTheme 拆成独立包，只引 Avalonia.Desktop 会报 AVLN2000 -->
+<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+```
+
+### 42. `arc:Input` 的属性是 `Placeholder`，不是 `Watermark`
+`arc:Input : FieldTextBox : Avalonia.Controls.TextBox`，保留 TextBox 全部能力
+（caret / selection / IME / undo / clipboard / 双向 `Text`）。
+原生 `TextBox` 的 `Watermark` 在 `arc:Input` 上**不存在**，写了会运行时抛属性异常。
+另外 `IsLabelVisible` 默认 `true`，会占掉一行标签高度，紧凑布局里要显式设 `false`。
+
+### 43. `AvaloniaResource` 只嵌入程序集，**不会**复制到输出目录
+运行时按磁盘路径读的文件（如 `Assets\devices.csv`）必须**同时**配两条：
+```xml
+<AvaloniaResource Include="Assets\devices.csv" />                                  <!-- 嵌入，可用 avares:// 读 -->
+<None Include="Assets\devices.csv" CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest" />                                   <!-- 落盘，可用 File.ReadAllLines 读 -->
+```
+只配第一条 → 产物里根本没有这个文件，日志报"机型表未找到或为空"，机型下拉永远是空的。
+稳妥做法是两路都实现：先读磁盘，磁盘没有就退回 `avares://MeiyouToolbox/Assets/devices.csv`。
+
+### 44. `[GeneratedRegex]` 必须是**没有方法体**的 partial 方法
+```csharp
+// ✗ 编译失败
+private static partial Regex UnbootableRegex(string slot) => ...;
+
+// ✓ 正确：多个 Regex 各写一个无体 partial 声明，用普通方法分发
+[GeneratedRegex(@"slot_a_unbootable:\s*yes", RegexOptions.IgnoreCase)]
+private static partial Regex SlotAUnbootableRegex();
+
+private static Regex UnbootableRegex(string slot) =>
+    slot == "a" ? SlotAUnbootableRegex() : SlotBUnbootableRegex();
+```
+
+### 45. `[RelayCommand]` 方法的返回值只能是 `Task`，不能是 `Task<bool>`
+`Task<bool>` 会被源生成器当成不支持的签名。要拿结果就拆成两个方法：
+```csharp
+[RelayCommand(CanExecute = nameof(CanList))]
+private async Task ListPartitionsAsync() => await LoadPartitionsAsync().ConfigureAwait(true);
+
+private async Task<bool> LoadPartitionsAsync() { ... }
+```
+
+### 46. `x:DataType` 绑定里别用 `ObjectConverters.IsNotNull` 做 `IsVisible`
+```xml
+<!-- ✗ 编译绑定下不可靠 -->
+<Border IsVisible="{Binding OutputDirectory, Converter={x:Static ObjectConverters.IsNotNull}}" />
+```
+在 ViewModel 上补一个 `public bool HasOutputDirectory => !string.IsNullOrWhiteSpace(OutputDirectory);`
+并在 `[ObservableProperty]` 上加 `[NotifyPropertyChangedFor(nameof(HasOutputDirectory))]`。
+
+### 47. 原生表格控件（DataGrid）要额外引包，干脆手写
+工程没引 `Avalonia.Controls.DataGrid`，用 `<DataGrid>` 会编译失败。
+手写方案：`Grid ColumnDefinitions="..."` 做表头 + `ListBox` + `ItemTemplate`，行高 26 足矣。
+
+### 48. 事件参数是 `VisualTreeAttachmentEventArgs`，不是 `VisualTreeEventArgs`
+```csharp
+private void OnAttached(object? sender, VisualTreeAttachmentEventArgs e) { ... }
+```
+
+### 49. 没有 `AppServicesHost`，取服务用 `App.Services.GetService<T>()`
+也没有 `AppDiagnostics.Report(...)` —— `AppDiagnostics` 只有 `Install()` 与
+`Write(string, Exception?)`（定义在 `App.axaml.cs:43`，写 `%LOCALAPPDATA%\MeiyouToolbox\logs\crash-*.log`）。
+
+### 50. `IAppLogger.Warn` 只有一个参数，没有 `Exception` 重载
+```csharp
+void Info(string message);
+void Warn(string message);                          // ← 只有 message
+void Error(string message, Exception? exception = null);
+```
+`_logger.Warn($"xxx：{ex.Message}")` 才是对的，`_logger.Warn("xxx", ex)` 报
+`CS1501: No overload for method 'Warn' takes 2 arguments`。
+
+### 51. 布局验证必须用**程序内置截图**，别截桌面
+`CopyFromScreen` 会截到置顶的其它窗口（浏览器/QQ），反复几轮都是白费。
+程序内有 `IScreenshotService.CaptureWindowAsync(Window)`，用 `RenderTargetBitmap` 渲染自身，
+输出到 `<程序目录>\screenshots\window-<时间戳>.png`，`MainWindow.OnOpened` 后 1.5 秒自动截一张。
+
+配合两个诊断环境变量可逐页截图：
+```powershell
+$env:MEIYOU_START_PAGE = "flash"      # overview / flash / backup / manage / settings
+$env:MEIYOU_START_OVERLAY = "edl"     # edl / fastboot，直接打开遮罩页
+```
+
+### 52. `git push` 的输出走 stderr，PowerShell 会报 `[exit code: 1]` 但推送其实成功
+判断依据是输出里有没有 `xxxx..yyyy  main -> main` 那一行，不要看退出码。
+`git : To github.com:...` 后面跟着 `NativeCommandError` 也是正常现象。
+
+### 53. `payload.bin` v2 头必须跳过 metadata 签名段
+头部结构（大端）：`"CrAU"`(4) + version(8) + manifestSize(8) + **[version≥2] metadataSignatureSize(4)**。
+`dataOffset = 24 + manifestSize + metadataSignatureSize`。
+**只读签名长度不跳过签名数据**，会让所有 `data_offset` 整体偏移，解出来的镜像全是垃圾，
+而且不会报任何错 —— 只有把镜像刷进设备才会发现。v1 头是 20 字节。
+
+### 54. `gpttool.exe` 的 `-o` 只对 `convert:` 生效
+`print:` 系列（`print:default...#insl:sector:10`）一律输出到 **stdout**，`-o` 被忽略。
+另外 GPT 原始 512KB 数据**不能直接喂给 `print:`**，必须先
+`gpttool -p raw.bin -f convert:gptmain -o gpt_main<N>.bin` 转格式。
+`print:qcedl_rawprogramxml` 能直接输出完整 `<program .../>`（连
+`start_sector="NUM_DISK_SECTORS-33."` 都算好了），只留 `physical_partition_number=""` 要自己填 LUN。

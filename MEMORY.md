@@ -1,7 +1,7 @@
 # 项目记忆 · 当前状态
 
 > 本文件是本工程的**唯一事实来源**。每轮工作开始先读它，结束前更新它。
-> 最后更新：2026-11-15 16:28
+> 最后更新：2026-11-15 20:10
 
 ---
 
@@ -9,15 +9,16 @@
 
 | 项 | 状态 |
 |---|---|
-| **CI** | ✅ 通过（最新 run 43694426176，commit `c4b1e7b`） |
-| 产物 | ✅ 可运行，`MeiyouToolbox.exe` |
+| **CI** | ✅ 通过（最新 run 43711974410，commit `cb87410`） |
+| 产物 | ✅ 可运行，`MeiyouToolbox.exe`，54 文件之外还带 `Tools\`（104 文件 / 105 MB）与 `Assets\devices.csv` |
 | 启动 | ✅ 正常，无崩溃 |
 | 配色 | ✅ 已修复（白底黑字） |
 | 内置截图 | ✅ 可用，输出到 `screenshots\` |
 | 实时日志 | ✅ 可用，输出到 `logs\` |
-| 第一轮需求 | ✅ 三区域界面 + 概览页三部分 + 四快捷按钮 |
-| 五页功能 | ✅ 概览 / 刷机 / 备份 / 管理 / 设置 全部实现 |
-| 下一步 | 真机联调（目前只过了编译，碰设备的路径都未实机验证） |
+| 工具链 | ✅ 105 MB 随仓库分发，`Tools\{Win,Android,Other,res}` |
+| 五页功能 | ✅ 概览 / 刷机 / 备份 / 管理 / 设置 全部实现，且都压在一屏内 |
+| 子页面 | ✅ 「完成任务提示」遮罩、9008 刷写页、Fastboot 刷写页 |
+| 下一步 | 真机联调（目前只过了编译 + 界面截图，碰设备的路径都未实机验证） |
 
 ---
 
@@ -230,8 +231,38 @@ C:\Users\Administrator\Documents\dsh\MEIZU_tools\   ← 唯一本地根目录
 - [x] **应用图标**：`Assets\app.ico`（16/24/32/48/64/128/256 七档）+ `Assets\app.png`
       （256 档，供 `Window.Icon`）。`<ApplicationIcon>` 管 exe，`Window.Icon` 管窗口，
       **两条通路都要设**，只设一条会出现"exe 换了图标但窗口还是空白方块"
+- [x] **界面微调（用户 m03698）**：
+      - 移除自绘顶栏，改用 Windows 原生标题栏（`MainWindow.axaml` 只剩 `<views:MainView />`）
+      - 侧栏五项全部常亮（`Variant="Secondary"`），当前页靠左侧 3×16 的 `navmark` 竖条区分
+      - 概览页「电脑状态」下移，紧贴「快捷打开」上方（`RowDefinitions="*,Auto,Auto"`，
+        手机状态 `Grid.RowSpan="3"`）
+      - 刷机/备份/管理三页全部改成多列 `ScrollViewer`，一屏内完整显示
+      - 通病根因：`ArcBaseTheme.StyledTypes` 只覆盖 9 个宿主类型，`TextBox/ComboBox/
+        CheckBox/ListBox/ProgressBar` **完全没有 ControlTheme，界面上不渲染也不报错**。
+        修法：`App.axaml` 加 `<FluentTheme />` + csproj 显式引 `Avalonia.Themes.Fluent` 包
+      - 文本输入统一用 `arc:Input`（属性是 `Placeholder` 不是 `Watermark`），
+        默认 `IsLabelVisible=true` 会占掉一行高度，要显式设 `False`
+- [x] **工具链入库（105.3 MB / 104 文件）**：`Tools\Win`（62）、`Tools\Android`（10）、
+      `Tools\Other`（1）、`Tools\res`（31，27 个机型的 `devprg`）。
+      csproj 用 `<None Include="Tools\**\*" CopyToOutputDirectory="PreserveNewest" />`
+- [x] **「完成任务提示」**（`Views\TaskCompleteOverlay.axaml` + `TaskCompleteViewModel`）：
+      全窗口共用遮罩，标题大字 + 任务名 + 完成/失败状态 + 「清空数据并开机」「直接开机」两个按钮
+- [x] **模式自动切换**（`Services\DeviceModeService.cs`）：解锁/上锁前自动把设备重启到
+      需要的模式（含两跳路径，如 9008→Fastboot 需要先 system 再 fastboot）
+- [x] **9008 刷写页**（`Views\EdlFlashOverlay.axaml`，commit `633962e`）：救砖包位置单输入框、
+      自动找引导文件与 rawprogram XML、串口/存储自动、分区表读取、写入/回读/擦除选中、
+      线刷整包、五个保护选项（自动重启 / 自动格式化 / 发送引导 / 保护基带 / 保护数据）
+- [x] **payload 解析服务**（`Services\PayloadService.cs`，commit `b421659`）：
+      手写 protobuf manifest 读取（不引 Google.Protobuf）、REPLACE/REPLACE_BZ/REPLACE_XZ/ZSTD
+      四种写入、**v2 头必须跳过 metadata 签名段**（否则 dataOffset 整体偏移，解出来全是垃圾）、
+      差分包明确拒绝
+- [x] **Fastboot 刷写页**（`Views\FastbootFlashOverlay.axaml`，commit `a131c51`）：
+      单一输入框选 payload / OTA zip / 已解包文件夹、查看 payload 分区、解包到指定目录、
+      镜像列表刷写（默认全勾）、刷完自动重启
 
 ### 待办
-1. `tools\` 目录与 adb/fastboot 自动准备
-2. 主题切换（Light/Dark）、侧栏折叠动画
-3. 真机联调：目前只在 CI 编译通过，所有会真的碰设备的分支都未在实机上验证过
+1. 主题切换（Light/Dark）、侧栏折叠动画
+2. 真机联调：目前只在 CI 编译通过 + 界面截图验证过，所有会真的碰设备的分支都未在实机上验证
+3. `FastbootFlashViewModel` 未实现 18 个逻辑分区硬编码白名单与 super 的
+   `delete-logical-partition` / `create-logical-partition` 处理（Violet 原版有，
+   我们目前直接 `fastboot flash <分区>`，动态分区机型可能刷不进去）
