@@ -1,0 +1,288 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:arc="https://github.com/AIDotNet/TKCode.Arc"
+             xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
+             xmlns:vm="using:MeiyouToolbox.ViewModels"
+             xmlns:models="using:MeiyouToolbox.Models"
+             xmlns:sys="using:System"
+             x:Class="MeiyouToolbox.Views.FastbootFlashOverlay"
+             x:DataType="vm:FastbootFlashViewModel"
+             IsVisible="{Binding IsOpen}">
+
+    <!-- 全窗口遮罩 -->
+    <Grid Background="#88000000">
+        <Border Margin="24"
+                CornerRadius="12"
+                Background="{arc:ArcDesignTokenResource Surface}"
+                BorderThickness="1"
+                BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
+                BoxShadow="0 12 40 0 #40000000">
+
+            <Grid Margin="18" RowDefinitions="Auto,*" RowSpacing="10">
+
+                <!-- 标题栏 -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <lucide:LucideIcon Kind="Package" Size="17"
+                                               Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                            <TextBlock Text="Fastboot 刷写"
+                                       FontSize="{arc:ArcDesignTokenResource TypeLG}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                            <Border Padding="8,2" CornerRadius="5"
+                                    Background="{arc:ArcDesignTokenResource SurfaceMuted}"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DeviceText}"
+                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding SourceHint}"
+                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                   Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                                   TextWrapping="Wrap" MaxLines="2" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                VerticalAlignment="Top">
+                        <arc:Button Variant="Ghost" Command="{Binding RefreshDeviceCommand}"
+                                    ToolTip.Tip="重新检测设备">
+                            <lucide:LucideIcon Kind="RefreshCw" Size="15" />
+                        </arc:Button>
+                        <arc:Button Variant="Ghost" Command="{Binding CloseCommand}"
+                                    ToolTip.Tip="关闭">
+                            <lucide:LucideIcon Kind="X" Size="15" />
+                        </arc:Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 主体：左列（输入框 + 镜像列表） / 右列（payload 信息 + 选项 + 日志） -->
+                <Grid Grid.Row="1" ColumnDefinitions="2*,10,1*">
+
+                    <!-- 左列 -->
+                    <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" RowSpacing="8">
+
+                        <!-- 唯一的输入框：payload 路径或已解包文件夹 -->
+                        <arc:Card Grid.Row="0" Title="Payload 或已解包文件夹">
+                            <StackPanel Spacing="6" Margin="0,4,0,0">
+
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
+                                    <arc:Input IsLabelVisible="False" Grid.Column="0"
+                                               Placeholder="点右侧按钮选择 payload.bin、OTA 压缩包，或已解包的文件夹"
+                                               Text="{Binding SourcePath}"
+                                               Height="30"
+                                               FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    <arc:Button Grid.Column="1" Variant="Secondary"
+                                                Click="OnPickSource" ToolTip.Tip="选择文件或文件夹">
+                                        <lucide:LucideIcon Kind="FolderOpen" Size="13" />
+                                    </arc:Button>
+                                </Grid>
+
+                                <!-- payload 专属操作：两个都只在输入框指向 payload 时可用 -->
+                                <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="6">
+                                    <arc:Button Grid.Column="0" Variant="Ghost"
+                                                Command="{Binding InspectPayloadCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <lucide:LucideIcon Kind="Info" Size="13" />
+                                            <TextBlock Text="查看分区" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                        </StackPanel>
+                                    </arc:Button>
+                                    <arc:Button Grid.Column="1" Variant="Secondary"
+                                                Command="{Binding UnpackPayloadCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <lucide:LucideIcon Kind="FileUp" Size="13" />
+                                            <TextBlock Text="解包 payload" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                        </StackPanel>
+                                    </arc:Button>
+                                    <arc:Button Grid.Column="2" Variant="Ghost"
+                                                Command="{Binding LoadImagesCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <lucide:LucideIcon Kind="ListChecks" Size="13" />
+                                            <TextBlock Text="载入镜像" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                        </StackPanel>
+                                    </arc:Button>
+                                </Grid>
+
+                                <TextBlock Text="{Binding OutputDirectory}"
+                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                           Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                                           TextTrimming="CharacterEllipsis"
+                                           IsVisible="{Binding HasOutputDirectory}" />
+                            </StackPanel>
+                        </arc:Card>
+
+                        <!-- 镜像列表 -->
+                        <arc:Card Grid.Row="1" Title="待刷镜像">
+                            <Grid RowDefinitions="Auto,*" RowSpacing="6" Margin="0,4,0,0">
+
+                                <TextBlock Grid.Row="0" Text="{Binding ImageStatus}"
+                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                           Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                                           TextTrimming="CharacterEllipsis" />
+
+                                <Border Grid.Row="1"
+                                        BorderThickness="1"
+                                        BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
+                                        CornerRadius="6">
+                                    <Grid RowDefinitions="28,*">
+                                        <Grid Grid.Row="0" ColumnDefinitions="34,*,1.2*,74"
+                                              Background="{arc:ArcDesignTokenResource SurfaceMuted}">
+                                            <TextBlock Grid.Column="0" Text="选" Margin="8,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                            <TextBlock Grid.Column="1" Text="分区" VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                            <TextBlock Grid.Column="2" Text="文件" VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                            <TextBlock Grid.Column="3" Text="大小" VerticalAlignment="Center"
+                                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                       Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                        </Grid>
+
+                                        <ListBox Grid.Row="1"
+                                                 ItemsSource="{Binding Images}"
+                                                 Background="Transparent"
+                                                 BorderThickness="0">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:FastbootImageRow">
+                                                    <Grid ColumnDefinitions="34,*,1.2*,74" Height="26">
+                                                        <CheckBox Grid.Column="0" Margin="8,0,0,0"
+                                                                  IsChecked="{Binding IsSelected}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Partition}"
+                                                                   VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding FileName}"
+                                                                   VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Grid.Column="3" Text="{Binding SizeText}"
+                                                                   VerticalAlignment="Center"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </arc:Card>
+
+                        <!-- 刷写 -->
+                        <arc:Button Grid.Row="2" Variant="Primary"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    Command="{Binding FlashCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <lucide:LucideIcon Kind="Play" Size="14" />
+                                <TextBlock Text="开始刷写" FontSize="{arc:ArcDesignTokenResource TypeSM}" />
+                            </StackPanel>
+                        </arc:Button>
+                    </Grid>
+
+                    <!-- 右列 -->
+                    <Grid Grid.Column="2" RowDefinitions="Auto,Auto,*" RowSpacing="8">
+
+                        <!-- payload 分区信息 -->
+                        <arc:Card Grid.Row="0" Title="Payload 分区">
+                            <Grid RowDefinitions="Auto,*" RowSpacing="6" Margin="0,4,0,0">
+                                <TextBlock Grid.Row="0" Text="{Binding PayloadStatus}"
+                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                           Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                                           TextWrapping="Wrap" MaxLines="2" />
+                                <Border Grid.Row="1" MaxHeight="150"
+                                        Background="{arc:ArcDesignTokenResource SurfaceMuted}"
+                                        CornerRadius="6" Padding="8"
+                                        IsVisible="{Binding HasPayloadInfo}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding PayloadPartitions}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="models:PayloadPartition">
+                                                    <Grid ColumnDefinitions="*,Auto" Height="20">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Name}"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding SizeText}"
+                                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                                   Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </arc:Card>
+
+                        <!-- 选项 -->
+                        <arc:Card Grid.Row="1" Title="选项">
+                            <StackPanel Spacing="6" Margin="0,4,0,0">
+                                <arc:Checkbox Content="刷完自动重启"
+                                              IsChecked="{Binding AutoReboot}"
+                                              FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                <arc:Checkbox Content="解包时校验大小"
+                                              IsChecked="{Binding VerifySize}"
+                                              FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                            </StackPanel>
+                        </arc:Card>
+
+                        <!-- 当前任务 + 日志 -->
+                        <arc:Card Grid.Row="2" Title="当前任务">
+                            <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="6" Margin="0,4,0,0">
+
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <TextBlock Grid.Column="0" Text="{Binding TaskTitle}"
+                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                               FontWeight="Medium"
+                                               Foreground="{arc:ArcDesignTokenResource Foreground}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <arc:Button Grid.Column="1" Variant="Ghost"
+                                                Command="{Binding CancelCommand}"
+                                                IsVisible="{Binding IsBusy}">
+                                        <TextBlock Text="取消" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    </arc:Button>
+                                </Grid>
+
+                                <ProgressBar Grid.Row="1" Minimum="0" Maximum="100"
+                                             Value="{Binding TaskPercent}"
+                                             IsIndeterminate="{Binding TaskIndeterminate}"
+                                             Height="4" />
+
+                                <TextBlock Grid.Row="2" Text="{Binding TaskMessage}"
+                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                           Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                           TextWrapping="Wrap" MaxLines="3"
+                                           TextTrimming="CharacterEllipsis" />
+
+                                <Border Grid.Row="3"
+                                        Background="{arc:ArcDesignTokenResource SurfaceMuted}"
+                                        CornerRadius="6" Padding="8">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding LogLines}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="sys:String">
+                                                    <TextBlock Text="{Binding}"
+                                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                               FontFamily="Consolas,monospace"
+                                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                                               TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </arc:Card>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

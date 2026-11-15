@@ -48,6 +48,9 @@ public static class AppServices
         // 备份相关
         services.AddSingleton<IBackupService, BackupService>();
 
+        // payload 解析（Fastboot 刷写页用）
+        services.AddSingleton<IPayloadService, PayloadService>();
+
         // 管理相关
         services.AddSingleton<ISlotService, SlotService>();
         services.AddSingleton<ICleanService, CleanService>();
@@ -59,6 +62,7 @@ public static class AppServices
         // 视图模型
         services.AddSingleton<TaskCompleteViewModel>();
         services.AddSingleton<EdlFlashViewModel>();
+        services.AddSingleton<FastbootFlashViewModel>();
         services.AddSingleton<OverviewViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<FlashViewModel>();

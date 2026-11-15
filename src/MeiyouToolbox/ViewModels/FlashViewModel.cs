@@ -32,6 +32,7 @@ public sealed partial class FlashViewModel : ObservableObject
     private readonly IToolLocator _tools;
     private readonly TaskCompleteViewModel _taskComplete;
     private readonly EdlFlashViewModel _edl;
+    private readonly FastbootFlashViewModel _fastboot;
     private readonly IAppLogger _logger;
 
     private CancellationTokenSource? _cts;
@@ -45,6 +46,7 @@ public sealed partial class FlashViewModel : ObservableObject
         IToolLocator tools,
         TaskCompleteViewModel taskComplete,
         EdlFlashViewModel edl,
+        FastbootFlashViewModel fastboot,
         IAppLogger logger)
     {
         _catalog = catalog;
@@ -55,6 +57,7 @@ public sealed partial class FlashViewModel : ObservableObject
         _tools = tools;
         _taskComplete = taskComplete;
         _edl = edl;
+        _fastboot = fastboot;
         _logger = logger;
 
         Profiles = new ObservableCollection<DeviceProfile>(_catalog.All);
@@ -80,6 +83,7 @@ public sealed partial class FlashViewModel : ObservableObject
         _tools = null!;
         _taskComplete = null!;
         _edl = null!;
+        _fastboot = null!;
         _logger = null!;
 
         Profiles = [];
@@ -722,6 +726,10 @@ public sealed partial class FlashViewModel : ObservableObject
         if (SelectedTarget == FlashTarget.Edl && _edl is not null)
         {
             await _edl.OpenAsync(SelectedProfile).ConfigureAwait(true);
+        }
+        else if (SelectedTarget == FlashTarget.Fastboot && _fastboot is not null)
+        {
+            await _fastboot.OpenAsync().ConfigureAwait(true);
         }
     }
 

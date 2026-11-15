@@ -131,6 +131,9 @@
 
             <!-- 9008 刷写页：从刷机页的「选择刷写通路」打开，全窗口遮罩 -->
             <views:EdlFlashOverlay DataContext="{Binding Edl}" />
+
+            <!-- Fastboot 刷写页：同样从「选择刷写通路」打开 -->
+            <views:FastbootFlashOverlay DataContext="{Binding Fastboot}" />
         </Grid>
     </DockPanel>
 </UserControl>

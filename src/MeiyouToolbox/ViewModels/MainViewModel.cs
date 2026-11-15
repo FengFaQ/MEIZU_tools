@@ -28,6 +28,7 @@ public sealed partial class MainViewModel : ObservableObject
         SettingsViewModel settings,
         TaskCompleteViewModel taskComplete,
         EdlFlashViewModel edl,
+        FastbootFlashViewModel fastboot,
         IScreenshotService screenshots,
         IAppLogger logger)
     {
@@ -38,6 +39,7 @@ public sealed partial class MainViewModel : ObservableObject
         Settings = settings;
         TaskComplete = taskComplete;
         Edl = edl;
+        Fastboot = fastboot;
         _screenshots = screenshots;
         _logger = logger;
 
@@ -64,6 +66,7 @@ public sealed partial class MainViewModel : ObservableObject
         Settings = null!;
         TaskComplete = null!;
         Edl = null!;
+        Fastboot = null!;
     }
 
     public OverviewViewModel Overview { get; }
@@ -81,6 +84,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>9008 刷写页 —— 从刷机页的「选择刷写通路」打开。</summary>
     public EdlFlashViewModel Edl { get; }
+
+    /// <summary>Fastboot 刷写页 —— 同样从「选择刷写通路」打开。</summary>
+    public FastbootFlashViewModel Fastboot { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOverview), nameof(IsFlash), nameof(IsBackup), nameof(IsManage), nameof(IsSettings), nameof(Title))]
