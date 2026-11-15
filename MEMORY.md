@@ -9,7 +9,7 @@
 
 | 项 | 状态 |
 |---|---|
-| **CI** | ✅ 通过（最新 run 43711974410，commit `cb87410`） |
+| **CI** | ✅ 通过（最新 run 43720523416，commit `690eaec`） |
 | 产物 | ✅ 可运行，`MeiyouToolbox.exe`，54 文件之外还带 `Tools\`（104 文件 / 105 MB）与 `Assets\devices.csv` |
 | 启动 | ✅ 正常，无崩溃 |
 | 配色 | ✅ 已修复（白底黑字） |
@@ -259,9 +259,28 @@ C:\Users\Administrator\Documents\dsh\MEIZU_tools\   ← 唯一本地根目录
 - [x] **Fastboot 刷写页**（`Views\FastbootFlashOverlay.axaml`，commit `a131c51`）：
       单一输入框选 payload / OTA zip / 已解包文件夹、查看 payload 分区、解包到指定目录、
       镜像列表刷写（默认全勾）、刷完自动重启
+- [x] **六项体验修复（用户 m05359，commit `d0d9629` / `690eaec`）**：
+      - 按钮全局降到 Arc `ControlSize.Small`（36px，默认 Medium 44px 会重叠）
+      - **`Services\UnlockPlanner.cs`**：把"哪个机型该进哪种模式、分几个阶段"从界面抽出来。
+        `auth-private` 是**两阶段**（Fastboot 写解锁码 → 9008 写 private 分区）；
+        有授权码才跳过 Fastboot 直接 9008；只有 `meizu20inf` 强制单阶段 Fastboot。
+        返回类型叫 **`UnlockRoute`**（不能叫 `UnlockPlan`，会与 `Models.UnlockPlan` 枚举冲突）
+      - 机型与解锁资料合并成一张卡，「导入资料」开 `CredentialEditorOverlay` 子窗口；
+        换机型自动从 `profiles\<product>\` 回填解锁码/授权码
+      - 9008 页「重启」改四选一弹窗（系统 / Recovery / FastbootD / 9008）——
+        `reboot qcedl fastboot` 在原实现里不存在，所以不给 fastboot 项
+      - Fastboot 页加镜像列表滚动、全选/全不选、擦除选中、槽位读取与切换
+      - **格式化改成安卓真实格式**：`FileSystemKind` 只剩 `Default / F2fs / Ext4`，
+        走 `fastboot format:ext4|format:f2fs`（主机端生成镜像），拒绝 `system/boot/persist`
+        等只读或关键分区。为此给 `Tools\Win` 补了 `mke2fs.exe` / `make_f2fs.exe` /
+        `make_f2fs_casefold.exe` / `mke2fs.conf`（旧 platform-tools r35 不带这些）
+      - 概览页重排：电脑状态与当前任务合并成一行、四个快捷按钮横向一排，
+        都并进左侧手机状态卡；右栏 360px 整列改成**运行日志**（订阅
+        `IAppLogger.LineWritten`，上限 400 行，自动滚到底，可清空显示）
 
 ### 待办
 1. 主题切换（Light/Dark）、侧栏折叠动画
+2. 解锁的 9008 阶段缺 `mzbox edlreadinfo` 等价实现，跳过了「回读校验 unlocked」这一步
 2. 真机联调：目前只在 CI 编译通过 + 界面截图验证过，所有会真的碰设备的分支都未在实机上验证
 3. `FastbootFlashViewModel` 未实现 18 个逻辑分区硬编码白名单与 super 的
    `delete-logical-partition` / `create-logical-partition` 处理（Violet 原版有，
