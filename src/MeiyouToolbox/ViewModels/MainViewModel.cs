@@ -39,6 +39,16 @@ public sealed partial class MainViewModel : ObservableObject
         _screenshots = screenshots;
         _logger = logger;
 
+        // 诊断入口：设置环境变量 MEIYOU_START_PAGE=flash 可直接以某页启动，
+        // 便于自动化截图验证各页布局，正常使用时不设此变量。
+        var startPage = Environment.GetEnvironmentVariable("MEIYOU_START_PAGE");
+        if (!string.IsNullOrWhiteSpace(startPage) &&
+            Enum.TryParse<AppPage>(startPage, ignoreCase: true, out var initial))
+        {
+            _currentPage = initial;
+            _logger.Info($"按环境变量以 {initial} 页启动");
+        }
+
         _logger.Info("MainViewModel 已创建，默认页面：概览");
     }
 
