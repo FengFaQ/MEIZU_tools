@@ -102,7 +102,7 @@
                                            FontSize="{arc:ArcDesignTokenResource TypeXS}"
                                            Foreground="{arc:ArcDesignTokenResource TextMuted}"
                                            TextWrapping="Wrap"
-                                           MaxLines="2"
+                                           MaxLines="3"
                                            TextTrimming="CharacterEllipsis" />
 
                                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">

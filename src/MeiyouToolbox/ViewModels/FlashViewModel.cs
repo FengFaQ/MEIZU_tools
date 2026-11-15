@@ -248,9 +248,11 @@ public sealed partial class FlashViewModel : ObservableObject
             }
 
             var steps = plan.Steps.Count;
+
+            // 单步时用步骤自身的说明，别再重复一遍模式名 —— 前半句已经说了"切到 9008"。
             return steps > 1
                 ? $"解锁分 {steps} 步：{plan.Summary}"
-                : $"会自动切到 {plan.EntryMode.Display()}：{plan.Summary}";
+                : $"会自动切到 {plan.EntryMode.Display()}：{plan.Steps[0].Label}";
         }
     }
 

@@ -9,7 +9,7 @@
 
 | 项 | 状态 |
 |---|---|
-| **CI** | ✅ 通过（最新 run 43720523416，commit `690eaec`） |
+| **CI** | ✅ 通过（最新 run 43723059177，commit `e67488f`） |
 | 产物 | ✅ 可运行，`MeiyouToolbox.exe`，54 文件之外还带 `Tools\`（104 文件 / 105 MB）与 `Assets\devices.csv` |
 | 启动 | ✅ 正常，无崩溃 |
 | 配色 | ✅ 已修复（白底黑字） |
@@ -285,3 +285,20 @@ C:\Users\Administrator\Documents\dsh\MEIZU_tools\   ← 唯一本地根目录
 3. `FastbootFlashViewModel` 未实现 18 个逻辑分区硬编码白名单与 super 的
    `delete-logical-partition` / `create-logical-partition` 处理（Violet 原版有，
    我们目前直接 `fastboot flash <分区>`，动态分区机型可能刷不进去）
+
+---
+
+## 七、界面验证用的诊断环境变量
+
+截图验证只能在 CI 产物上做（本地无 .NET SDK）。`MainViewModel` 构造函数读取下面四个
+环境变量，正常启动时都不存在，因此对用户毫无影响：
+
+| 变量 | 作用 |
+|---|---|
+| `MEIYOU_START_PAGE=overview\|flash\|backup\|manage\|settings` | 直接以某页启动 |
+| `MEIYOU_START_OVERLAY=edl\|fastboot\|credential` | 直接打开 9008 / Fastboot / 解锁资料遮罩页 |
+| `MEIYOU_START_DEVICE=meizu21` | 直接选中某机型（按 Product 忽略大小写），用于验证按机型变化的解锁提示 |
+
+需要预置凭据时，直接往 `<产物目录>\profiles\<product>\` 写
+`unlock-code.txt` / `auth-code.txt`（各 512 字符）即可，程序启动会自动读。
+
