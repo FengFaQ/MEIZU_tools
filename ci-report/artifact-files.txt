@@ -33,7 +33,7 @@ Markdig.dll	501760
 MeiyouToolbox.deps.json	28537
 MeiyouToolbox.dll	924160
 MeiyouToolbox.exe	255488
-MeiyouToolbox.pdb	176972
+MeiyouToolbox.pdb	176980
 MeiyouToolbox.runtimeconfig.json	487
 MicroCom.Runtime.dll	15360
 Microsoft.Extensions.DependencyInjection.Abstractions.dll	66312
