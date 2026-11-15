@@ -53,6 +53,24 @@ public sealed partial class MainViewModel : ObservableObject
             _logger.Info($"按环境变量以 {initial} 页启动");
         }
 
+        // 同上，用于验证"按机型规划解锁"的提示：MEIYOU_START_DEVICE=meizu21
+        var startDevice = Environment.GetEnvironmentVariable("MEIYOU_START_DEVICE");
+        if (!string.IsNullOrWhiteSpace(startDevice))
+        {
+            _currentPage = AppPage.Flash;
+            var match = Flash.Profiles.FirstOrDefault(
+                p => string.Equals(p.Product, startDevice, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                Flash.SelectedProfile = match;
+                _logger.Info($"按环境变量选中机型 {match.Product}");
+            }
+            else
+            {
+                _logger.Warn($"环境变量 MEIYOU_START_DEVICE={startDevice} 在机型表里找不到");
+            }
+        }
+
         // 同上，用于直接打开遮罩页做布局截图：MEIYOU_START_OVERLAY=edl|fastboot
         var startOverlay = Environment.GetEnvironmentVariable("MEIYOU_START_OVERLAY");
         if (string.Equals(startOverlay, "edl", StringComparison.OrdinalIgnoreCase))
