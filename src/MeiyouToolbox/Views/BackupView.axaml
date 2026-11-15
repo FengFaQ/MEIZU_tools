@@ -17,7 +17,7 @@
                            FontSize="{arc:ArcDesignTokenResource TypeXL}"
                            FontWeight="SemiBold"
                            Foreground="{arc:ArcDesignTokenResource Foreground}" />
-                <TextBlock Text="把分区表与镜像从设备回读到电脑。备份出来的目录本身就是一套可线刷的包。"
+                <TextBlock Text="把分区表与镜像回读到电脑。备份目录本身就是一套可线刷的包。"
                            FontSize="{arc:ArcDesignTokenResource TypeSM}"
                            Foreground="{arc:ArcDesignTokenResource TextMuted}"
                            TextWrapping="Wrap" />
@@ -52,7 +52,7 @@
 
                     <!-- 备份范围 -->
                     <arc:Card Title="备份范围"
-                              Description="全分区备份用于留底与救砖；分区表很小；QCN 是基带数据，不在普通分区里。">
+                              Description="全分区用于留底与救砖；QCN 是基带数据，不在普通分区里。">
                         <StackPanel Spacing="8" Margin="0,6,0,0">
 
                             <ComboBox ItemsSource="{Binding Scopes}"
@@ -100,7 +100,7 @@
 
                     <!-- 机型与保存位置 -->
                     <arc:Card Title="机型与保存位置"
-                              Description="机型只用来生成目录名与备份清单，不影响读取。每次备份另建带时间戳的子文件夹。">
+                              Description="机型只用于生成目录名与备份清单，不影响读取。">
                         <StackPanel Spacing="8" Margin="0,6,0,0">
 
                             <ComboBox ItemsSource="{Binding Profiles}"
@@ -141,7 +141,7 @@
 
                     <!-- 恢复 QCN -->
                     <arc:Card Title="恢复 QCN"
-                              Description="把之前备份的 .qcn 写回设备。同样需要设备处于 DIAG 模式。">
+                              Description="把 .qcn 写回设备，需要 DIAG 模式。">
                         <StackPanel Spacing="8" Margin="0,6,0,0">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                                 <arc:Input IsLabelVisible="False" Grid.Column="0"
@@ -173,7 +173,7 @@
 
                     <!-- 分区列表 -->
                     <arc:Card Title="分区列表"
-                              Description="从设备读出的 GPT 分区表。只有 9008 模式能读；读取后可单独选一个分区备份。">
+                              Description="GPT 分区表。只有 9008 模式能读。">
                         <StackPanel Spacing="8" Margin="0,6,0,0">
 
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
