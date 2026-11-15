@@ -27,6 +27,7 @@ public sealed partial class MainViewModel : ObservableObject
         ManageViewModel manage,
         SettingsViewModel settings,
         TaskCompleteViewModel taskComplete,
+        EdlFlashViewModel edl,
         IScreenshotService screenshots,
         IAppLogger logger)
     {
@@ -36,6 +37,7 @@ public sealed partial class MainViewModel : ObservableObject
         Manage = manage;
         Settings = settings;
         TaskComplete = taskComplete;
+        Edl = edl;
         _screenshots = screenshots;
         _logger = logger;
 
@@ -61,6 +63,7 @@ public sealed partial class MainViewModel : ObservableObject
         Manage = null!;
         Settings = null!;
         TaskComplete = null!;
+        Edl = null!;
     }
 
     public OverviewViewModel Overview { get; }
@@ -75,6 +78,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>「完成任务提示」—— 全窗口共用的收尾提示层。</summary>
     public TaskCompleteViewModel TaskComplete { get; }
+
+    /// <summary>9008 刷写页 —— 从刷机页的「选择刷写通路」打开。</summary>
+    public EdlFlashViewModel Edl { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOverview), nameof(IsFlash), nameof(IsBackup), nameof(IsManage), nameof(IsSettings), nameof(Title))]

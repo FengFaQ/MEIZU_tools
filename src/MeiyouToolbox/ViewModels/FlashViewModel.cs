@@ -31,6 +31,7 @@ public sealed partial class FlashViewModel : ObservableObject
     private readonly IDeviceModeService _modes;
     private readonly IToolLocator _tools;
     private readonly TaskCompleteViewModel _taskComplete;
+    private readonly EdlFlashViewModel _edl;
     private readonly IAppLogger _logger;
 
     private CancellationTokenSource? _cts;
@@ -43,6 +44,7 @@ public sealed partial class FlashViewModel : ObservableObject
         IDeviceModeService modes,
         IToolLocator tools,
         TaskCompleteViewModel taskComplete,
+        EdlFlashViewModel edl,
         IAppLogger logger)
     {
         _catalog = catalog;
@@ -52,6 +54,7 @@ public sealed partial class FlashViewModel : ObservableObject
         _modes = modes;
         _tools = tools;
         _taskComplete = taskComplete;
+        _edl = edl;
         _logger = logger;
 
         Profiles = new ObservableCollection<DeviceProfile>(_catalog.All);
@@ -76,6 +79,7 @@ public sealed partial class FlashViewModel : ObservableObject
         _modes = null!;
         _tools = null!;
         _taskComplete = null!;
+        _edl = null!;
         _logger = null!;
 
         Profiles = [];
@@ -705,7 +709,7 @@ public sealed partial class FlashViewModel : ObservableObject
 
     /// <summary>切换通路（由子窗口的两个按钮调用）。</summary>
     [RelayCommand]
-    private void SetTarget(string? target)
+    private async Task SetTargetAsync(string? target)
     {
         SelectedTarget = string.Equals(target, "fastboot", StringComparison.OrdinalIgnoreCase)
             ? FlashTarget.Fastboot
@@ -713,6 +717,12 @@ public sealed partial class FlashViewModel : ObservableObject
 
         IsTargetPickerOpen = false;
         Report($"刷写通路：{FlashTargetText}");
+
+        // 选 9008 就把完整的 9008 刷写页打开，让用户在里面读分区表、刷整包。
+        if (SelectedTarget == FlashTarget.Edl && _edl is not null)
+        {
+            await _edl.OpenAsync(SelectedProfile).ConfigureAwait(true);
+        }
     }
 
     /// <summary>打开 / 关闭通路选择子窗口。</summary>

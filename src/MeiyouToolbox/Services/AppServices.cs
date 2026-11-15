@@ -58,6 +58,7 @@ public static class AppServices
 
         // 视图模型
         services.AddSingleton<TaskCompleteViewModel>();
+        services.AddSingleton<EdlFlashViewModel>();
         services.AddSingleton<OverviewViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<FlashViewModel>();

@@ -128,6 +128,9 @@
 
             <!-- 「完成任务提示」：全窗口共用的收尾遮罩，任何页面都能触发 -->
             <views:TaskCompleteOverlay DataContext="{Binding TaskComplete}" />
+
+            <!-- 9008 刷写页：从刷机页的「选择刷写通路」打开，全窗口遮罩 -->
+            <views:EdlFlashOverlay DataContext="{Binding Edl}" />
         </Grid>
     </DockPanel>
 </UserControl>
