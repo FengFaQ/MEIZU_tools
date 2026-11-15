@@ -408,7 +408,7 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            _logger.Warn("探测设备失败", ex);
+            _logger.Warn($"探测设备失败：{ex.Message}");
             Post(() => DeviceText = "未检测");
         }
     }
