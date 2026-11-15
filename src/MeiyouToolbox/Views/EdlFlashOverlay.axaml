@@ -87,14 +87,15 @@
                                     </arc:Button>
                                 </Grid>
 
-                                <Grid ColumnDefinitions="Auto,*,Auto,120" ColumnSpacing="6">
+                                <Grid ColumnDefinitions="Auto,140,Auto,*" ColumnSpacing="6">
                                     <TextBlock Grid.Column="0" Text="串口"
                                                VerticalAlignment="Center"
                                                FontSize="{arc:ArcDesignTokenResource TypeXS}"
                                                Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
                                     <ComboBox Grid.Column="1" ItemsSource="{Binding Ports}"
                                               SelectedItem="{Binding SelectedPort}"
-                                              Height="30" MinWidth="0"
+                                              Height="30"
+                                              HorizontalAlignment="Stretch"
                                               PlaceholderText="未检测到"
                                               FontSize="{arc:ArcDesignTokenResource TypeXS}" />
                                     <TextBlock Grid.Column="2" Text="存储"
@@ -134,11 +135,13 @@
                                 </Grid>
 
                                 <Border Grid.Row="1"
+                                        MinHeight="120"
                                         BorderThickness="1"
                                         BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
                                         CornerRadius="6">
                                     <Grid RowDefinitions="30,*">
                                         <Grid Grid.Row="0" ColumnDefinitions="34,*,46,84,78,110"
+                                              Height="30"
                                               Background="{arc:ArcDesignTokenResource SurfaceMuted}">
                                             <TextBlock Grid.Column="0" Text="选" Margin="8,0,0,0"
                                                        VerticalAlignment="Center"
@@ -199,7 +202,7 @@
                                     </Grid>
                                 </Border>
 
-                                <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="6">
+                                <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="6" Margin="0,2,0,0">
                                     <arc:Button Grid.Column="0" Variant="Primary"
                                                 Command="{Binding WriteSelectedCommand}">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
