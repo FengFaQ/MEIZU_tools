@@ -65,6 +65,14 @@ public sealed partial class MainViewModel : ObservableObject
             Fastboot.IsOpen = true;
             _logger.Info("按环境变量打开 Fastboot 刷写页");
         }
+        else if (string.Equals(startOverlay, "credential", StringComparison.OrdinalIgnoreCase))
+        {
+            // 解锁资料子窗口：先选一台机型，否则弹窗里没有标题可看。
+            _currentPage = AppPage.Flash;
+            Flash.SelectedProfile = Flash.Profiles.FirstOrDefault();
+            Flash.IsCredentialEditorOpen = true;
+            _logger.Info("按环境变量打开解锁资料子窗口");
+        }
 
         _logger.Info("MainViewModel 已创建，默认页面：概览");
     }
