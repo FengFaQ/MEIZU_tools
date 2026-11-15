@@ -81,14 +81,23 @@ public interface IFirehoseService
         IProgress<EdlProgress>? progress = null,
         CancellationToken cancellationToken = default);
 
-    /// <summary>按 rawprogram XML 刷入（整包线刷）。</summary>
+    /// <summary>
+    /// 按 rawprogram XML 刷入或回读。
+    /// <para>
+    /// <paramref name="searchPath"/> 是"去哪找要刷的镜像"；回读时镜像由 fh_loader 生成，
+    /// 落到 <c>--mainoutputdir</c>，所以回读要额外传 <paramref name="outputDirectory"/>，
+    /// 否则文件会全部堆到临时工作目录里。参考实现用 <c>read qcedlxml</c> 的
+    /// <c>%folderpath%</c> 参数做这件事。
+    /// </para>
+    /// </summary>
     Task<bool> SendXmlAsync(
         EdlSessionOptions options,
         IEnumerable<string> xmlFiles,
         string searchPath,
         bool convertToRead,
         IProgress<EdlProgress>? progress = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? outputDirectory = null);
 
     /// <summary>直接复位 / 重启到系统或 EDL。</summary>
     Task<bool> ResetAsync(
@@ -475,7 +484,8 @@ public sealed partial class FirehoseService : IFirehoseService
         string searchPath,
         bool convertToRead,
         IProgress<EdlProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? outputDirectory = null)
     {
         var exe = _tools.FindTool("fh_loader.exe");
         if (exe is null)
@@ -485,6 +495,15 @@ public sealed partial class FirehoseService : IFirehoseService
         }
 
         var work = EnsureWorkDirectory(options.WorkDirectory);
+
+        // 回读产物落到 outputDirectory（通常是用户的备份目录），刷入产物落到临时目录。
+        var mainOutput = work;
+        if (convertToRead && !string.IsNullOrWhiteSpace(outputDirectory))
+        {
+            mainOutput = outputDirectory!;
+            Directory.CreateDirectory(mainOutput);
+        }
+
         var files = xmlFiles.Where(File.Exists).ToList();
         if (files.Count == 0)
         {
@@ -500,7 +519,7 @@ public sealed partial class FirehoseService : IFirehoseService
             "--memoryname", options.Memory.ToArgument(),
             "--search_path", searchPath,
             "--sendxml", string.Join(',', files),
-            "--mainoutputdir", work,
+            "--mainoutputdir", mainOutput,
             "--skip_configure",
             "--showpercentagecomplete",
             "--noprompt",
@@ -533,7 +552,7 @@ public sealed partial class FirehoseService : IFirehoseService
             timeout: SendTimeout,
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        CollectSkippedFiles(work);
+        CollectSkippedFiles(mainOutput);
 
         if (result.Success)
         {

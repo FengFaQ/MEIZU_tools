@@ -42,12 +42,17 @@ public static class AppServices
         services.AddSingleton<ICredentialStore, CredentialStore>();
         services.AddSingleton<IFirehoseService, FirehoseService>();
         services.AddSingleton<IPartitionTableService, PartitionTableService>();
+        services.AddSingleton<IEdlReader, EdlReader>();
         services.AddSingleton<IFlashService, FlashService>();
+
+        // 备份相关
+        services.AddSingleton<IBackupService, BackupService>();
 
         // 视图模型
         services.AddSingleton<OverviewViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<FlashViewModel>();
+        services.AddSingleton<BackupViewModel>();
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();

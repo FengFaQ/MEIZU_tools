@@ -100,6 +100,7 @@ public sealed class FlashService : IFlashService
     private readonly IToolLocator _tools;
     private readonly IFirehoseService _firehose;
     private readonly IPartitionTableService _partitions;
+    private readonly IEdlReader _reader;
     private readonly IAppLogger _logger;
 
     public FlashService(
@@ -107,12 +108,14 @@ public sealed class FlashService : IFlashService
         IToolLocator tools,
         IFirehoseService firehose,
         IPartitionTableService partitions,
+        IEdlReader reader,
         IAppLogger logger)
     {
         _runner = runner;
         _tools = tools;
         _firehose = firehose;
         _partitions = partitions;
+        _reader = reader;
         _logger = logger;
     }
 
@@ -997,44 +1000,20 @@ public sealed class FlashService : IFlashService
         return ports.Count == 0 ? null : ports[0];
     }
 
-    private async Task<IReadOnlyList<GptPartition>> ReadPartitionsAsync(
+    /// <summary>
+    /// 读分区表。委托给 <see cref="IEdlReader"/>，本类不再自己实现 ——
+    /// 原实现这里调 <c>ReadPartitionRawAsync</c>，而后者又回调本方法，
+    /// 一旦真的走去读分区表就会无限递归栈溢出。
+    /// </summary>
+    private Task<IReadOnlyList<GptPartition>> ReadPartitionsAsync(
         string port,
         StorageKind memory,
         string work,
         IProgress<FlashProgress>? progress,
-        CancellationToken cancellationToken)
-    {
-        var result = new List<GptPartition>();
-        var sectorSize = memory.SectorSize();
+        CancellationToken cancellationToken) =>
+        _reader.ReadPartitionsAsync(port, memory, work, progress, cancellationToken);
 
-        // LUN 数量未知时的上限：参考实现靠 info 读 lunnum，这里最多探 8 个。
-        for (var lun = 0; lun < 8; lun++)
-        {
-            progress?.Report(new FlashProgress($"正在读取分区表 LUN {lun}…"));
-
-            var gptPath = Path.Combine(work, $"gpt_main{lun}.bin");
-            var read = await ReadPartitionRawAsync(
-                $"gpt_main{lun}", gptPath, port, memory, work, progress, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (!read.Success || !File.Exists(gptPath) || new FileInfo(gptPath).Length < 1024)
-            {
-                break;
-            }
-
-            var parsed = _partitions.ParseGptDump(gptPath, memory);
-            if (parsed.Count == 0)
-            {
-                break;
-            }
-
-            result.AddRange(parsed.Select(p => p with { Lun = lun, SectorSize = sectorSize }));
-        }
-
-        return result;
-    }
-
-    /// <summary>按分区名在 9008 下回读原始数据（内部用 gpt 定位）。</summary>
+    /// <summary>按分区名在 9008 下回读原始数据（先用 GPT 定位，再单次下发）。</summary>
     private async Task<FlashResult> ReadPartitionRawAsync(
         string partition,
         string destination,
@@ -1050,7 +1029,8 @@ public sealed class FlashService : IFlashService
             return FlashResult.Fail("未检测到 9008 端口");
         }
 
-        var gpt = await ReadPartitionsAsync(resolvedPort, memory, work, progress, cancellationToken)
+        var gpt = await _reader
+            .ReadPartitionsAsync(resolvedPort, memory, work, progress, cancellationToken)
             .ConfigureAwait(false);
         var target = _partitions.Find(gpt, partition);
         if (target is null)
@@ -1058,26 +1038,12 @@ public sealed class FlashService : IFlashService
             return FlashResult.Fail($"分区表里找不到 {partition}");
         }
 
-        var xmlPath = Path.Combine(work, $"read-{partition}.xml");
-        var node = _partitions.BuildProgramNode(
-            target, Path.GetFileName(destination), memory, sparse: false);
-        await File.WriteAllTextAsync(
-            xmlPath, $"<?xml version=\"1.0\" ?><data>{node}</data>", cancellationToken)
+        var directory = Path.GetDirectoryName(Path.GetFullPath(destination)) ?? work;
+        Directory.CreateDirectory(directory);
+
+        return await _reader.ReadPartitionAsync(
+            target, destination, resolvedPort, memory, work, progress, cancellationToken)
             .ConfigureAwait(false);
-
-        var options = new EdlSessionOptions
-        {
-            Port = resolvedPort,
-            Memory = memory,
-            WorkDirectory = work,
-        };
-
-        var ok = await _firehose.SendXmlAsync(
-            options, [xmlPath], Path.GetDirectoryName(destination) ?? work,
-            convertToRead: true, progress: ToEdlProgress(progress),
-            cancellationToken: cancellationToken).ConfigureAwait(false);
-
-        return ok ? FlashResult.Ok($"已回读 {partition}") : FlashResult.Fail($"回读 {partition} 失败");
     }
 
     private async Task<bool> ReadPrivateAsync(
@@ -1190,7 +1156,22 @@ public sealed class FlashService : IFlashService
             return;
         }
 
-        var drive = memory == StorageKind.Ufs ? 1 : 2;
+        // 参考实现 mzbox.bat:EDLSETBOOTABLESTORAGEDRIVE 的真实映射：
+        // emmc / spinor → 0；ufs → 按当前槽位 1(a) 或 2(b)。
+        // 原来这里写成 "ufs→1, 其余→2" 是错的，会导致 ufs 设备刷完起不来。
+        int drive;
+        if (memory != StorageKind.Ufs)
+        {
+            drive = 0;
+        }
+        else
+        {
+            var slot = await _reader
+                .ReadSlotAsync(port, memory, CreateWorkDirectory(), cancellationToken)
+                .ConfigureAwait(false);
+            drive = slot == "b" ? 2 : 1;
+        }
+
         var work = CreateWorkDirectory();
         var xmlPath = Path.Combine(work, "setboot.xml");
         var xml = $"""
@@ -1202,7 +1183,7 @@ public sealed class FlashService : IFlashService
         await _runner.RunAsync(
             exe,
             ["--port", $@"\\.\COM{port}", "--memoryname", memory.ToArgument(),
-             "--sendxml", xmlPath, "--mainoutputdir", work,
+             "--search_path", work, "--sendxml", xmlPath, "--mainoutputdir", work,
              "--skip_configure", "--noprompt"],
             workingDirectory: work, timeout: ShortTimeout,
             cancellationToken: cancellationToken).ConfigureAwait(false);

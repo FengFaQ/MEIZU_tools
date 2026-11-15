@@ -138,13 +138,7 @@
             </Border>
 
             <Border IsVisible="{Binding IsBackup}">
-                <views:PlaceholderView>
-                    <views:PlaceholderView.DataContext>
-                        <vm:PlaceholderViewModel Title="备份"
-                                                 Description="全分区备份、任意分区回读、QCN 基带备份与恢复。"
-                                                 IconKind="HardDriveDownload" />
-                    </views:PlaceholderView.DataContext>
-                </views:PlaceholderView>
+                <views:BackupView DataContext="{Binding Backup}" />
             </Border>
 
             <Border IsVisible="{Binding IsManage}">

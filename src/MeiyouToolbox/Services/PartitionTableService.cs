@@ -25,6 +25,22 @@ public interface IPartitionTableService
     /// <summary>生成 rawprogram 里的 &lt;program/&gt; 节点。</summary>
     string BuildProgramNode(
         GptPartition partition, string fileName, StorageKind memory, bool sparse);
+
+    /// <summary>
+    /// 让 gpttool 直接吐出完整的 &lt;program/&gt; 节点（含 PrimaryGPT / BackupGPT）。
+    /// <para>
+    /// 参考实现是手工用 <c>for /f</c> 拼这些节点，还要自己算
+    /// <c>NUM_DISK_SECTORS-33.</c> 这类表达式；gpttool 的
+    /// <c>print:qcedl_rawprogramxml</c> 本身就输出精确结果（连
+    /// <c>start_byte_hex="(512*NUM_DISK_SECTORS)-16896."</c> 都算好了），
+    /// 直接拿来用比手拼可靠得多。
+    /// </para>
+    /// </summary>
+    Task<IReadOnlyList<string>> GetRawProgramNodesAsync(
+        string gptFilePath,
+        int lun,
+        StorageKind memory,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>GPT 里的一条分区记录。</summary>
@@ -134,6 +150,12 @@ public sealed partial class PartitionTableService : IPartitionTableService
                 continue;
             }
 
+            // Unalloc_xxx 是未分配空间，不是分区；参考实现也只在备份清单里列出来供用户删改。
+            if (name.StartsWith("Unalloc", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             if (!long.TryParse(match.Groups["start"].Value, out var start) ||
                 !long.TryParse(match.Groups["count"].Value, out var count) ||
                 count <= 0)
@@ -151,6 +173,57 @@ public sealed partial class PartitionTableService : IPartitionTableService
     public GptPartition? Find(IEnumerable<GptPartition> partitions, string name) =>
         partitions.FirstOrDefault(p =>
             p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// 让 gpttool 输出完整的 program 节点列表。每行形如
+    /// <c>[Xml1]&lt;program SECTOR_SIZE_IN_BYTES="512" ... /&gt;</c>，
+    /// 这里剥掉 <c>[XmlN]</c> 前缀并把 <c>physical_partition_number</c> 填上 LUN。
+    /// </summary>
+    public async Task<IReadOnlyList<string>> GetRawProgramNodesAsync(
+        string gptFilePath,
+        int lun,
+        StorageKind memory,
+        CancellationToken cancellationToken = default)
+    {
+        var exe = _tools.FindTool("gpttool.exe");
+        if (exe is null || !File.Exists(gptFilePath))
+        {
+            return [];
+        }
+
+        var result = await _runner.RunAsync(
+            exe,
+            ["-p", gptFilePath, "-f", "print:qcedl_rawprogramxml"],
+            timeout: TimeSpan.FromSeconds(30),
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (!result.Success)
+        {
+            _logger?.Warn($"gpttool 生成 rawprogram 节点失败：{gptFilePath}");
+            return [];
+        }
+
+        var nodes = new List<string>();
+        foreach (var raw in result.StandardOutput.Split('\n'))
+        {
+            var line = raw.Trim();
+            var index = line.IndexOf("<program ", StringComparison.Ordinal);
+            if (index < 0)
+            {
+                continue;
+            }
+
+            var node = line[index..].TrimEnd();
+            // gpttool 把 physical_partition_number 留空，必须由调用方补 LUN。
+            node = node.Replace(
+                "physical_partition_number=\"\"",
+                $"physical_partition_number=\"{lun}\"",
+                StringComparison.Ordinal);
+            nodes.Add(node);
+        }
+
+        return nodes;
+    }
 
     /// <summary>
     /// 生成 rawprogram 节点。注意 <c>sparse</c> 属性必须是 true/false 字符串，
