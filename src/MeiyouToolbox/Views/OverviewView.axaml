@@ -14,10 +14,10 @@
         颜色全部走 Arc Design Token（{arc:ArcDesignTokenResource ...}），
         不自己定义画刷，避免与 Arc 的亮/暗主题冲突导致白字白底。
     -->
-    <Grid Margin="16" ColumnDefinitions="*,340" RowDefinitions="*,Auto" ColumnSpacing="16" RowSpacing="16">
+    <Grid Margin="16" ColumnDefinitions="*,340" RowDefinitions="*,Auto,Auto" ColumnSpacing="16" RowSpacing="16">
 
         <!-- ======== 第一、四象限：手机状态（左侧通栏） ======== -->
-        <arc:Card Grid.Column="0" Grid.RowSpan="2" Padding="20">
+        <arc:Card Grid.Column="0" Grid.RowSpan="3" Padding="20">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="16">
 
@@ -96,8 +96,10 @@
             </ScrollViewer>
         </arc:Card>
 
-        <!-- ======== 第二象限：电脑状态 + 当前任务 ======== -->
-        <arc:Card Grid.Column="1" Grid.Row="0" Padding="20" VerticalAlignment="Top">
+        <!-- ======== 第二象限：电脑状态 + 当前任务 ========
+             放在右下区块的上方并与之靠近（Row=1），Row=0 留白把这一栏整体压向底部，
+             与"快捷打开"之间保持 RowSpacing(16) 的间隔。 -->
+        <arc:Card Grid.Column="1" Grid.Row="1" Padding="20" VerticalAlignment="Bottom">
             <StackPanel Spacing="16">
                 <TextBlock Text="电脑状态"
                            FontSize="{arc:ArcDesignTokenResource TypeSM}"
@@ -143,7 +145,7 @@
         </arc:Card>
 
         <!-- ======== 第三象限：快捷打开 ======== -->
-        <arc:Card Grid.Column="1" Grid.Row="1" Padding="20" VerticalAlignment="Bottom">
+        <arc:Card Grid.Column="1" Grid.Row="2" Padding="20" VerticalAlignment="Bottom">
             <StackPanel Spacing="12">
                 <TextBlock Text="快捷打开"
                            FontSize="{arc:ArcDesignTokenResource TypeSM}"

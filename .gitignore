@@ -15,5 +15,10 @@ Thumbs.db
 desktop.ini
 .DS_Store
 
-## 工具目录（体积大，不入库；由 CI 或用户自行放置 adb/fastboot）
-src/MeiyouToolbox/Tools/
+## 工具目录（src/MeiyouToolbox/Tools/）随仓库一起分发，约 105 MB。
+## 结构对齐原魅族工具箱：Win/（Windows 端 exe）、Android/（推送到手机的二进制）、
+## Other/、res/（各机型的 9008 programmer）。不要在这里忽略它。
+##
+## 例外：构建过程可能在 Tools 下产生的临时文件仍然忽略。
+src/MeiyouToolbox/Tools/**/*.log
+src/MeiyouToolbox/Tools/**/*.tmp

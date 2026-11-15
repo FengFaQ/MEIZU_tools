@@ -961,7 +961,7 @@ public sealed class FlashService : IFlashService
         // 顺序不能反：必须先写 misc 清空标记，再 oem lock，否则会卡在开机验证。
         progress?.Report(new FlashProgress("正在写入 misc 清数据标记…"));
         var miscImage = Path.Combine(
-            _tools.ToolsDirectory, "Android", "misc_wipedata.img");
+            _tools.AndroidToolsDirectory, "misc_wipedata.img");
 
         if (File.Exists(miscImage))
         {

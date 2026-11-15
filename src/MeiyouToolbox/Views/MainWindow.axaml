@@ -12,7 +12,6 @@
         Background="White"
         Icon="/Assets/app.png"
         WindowStartupLocation="CenterScreen">
-    <!-- 顶栏、侧栏与自定义窗口按钮都在 MainView 里绘制，
-         因此这里用普通 Window（无系统边框样式），标题栏由我们自己实现。 -->
+    <!-- 用系统原生标题栏（带最小化 / 最大化 / 关闭），界面内不再自绘顶栏。 -->
     <views:MainView />
 </Window>

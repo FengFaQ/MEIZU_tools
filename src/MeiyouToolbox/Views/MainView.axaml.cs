@@ -1,12 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
 using MeiyouToolbox.Services;
 using MeiyouToolbox.ViewModels;
 
 namespace MeiyouToolbox.Views;
 
-/// <summary>应用的主内容：顶栏 + 侧栏 + 页面宿主。</summary>
+/// <summary>应用的主内容：侧栏 + 页面宿主（窗口按钮交给系统标题栏）。</summary>
 public partial class MainView : UserControl
 {
     private bool _captureBound;
@@ -63,24 +62,4 @@ public partial class MainView : UserControl
 
         _captureBound = true;
     }
-
-    private void OnMinimize(object? sender, RoutedEventArgs e)
-    {
-        if (Host is { } window)
-        {
-            window.WindowState = WindowState.Minimized;
-        }
-    }
-
-    private void OnToggleMaximize(object? sender, RoutedEventArgs e)
-    {
-        if (Host is { } window)
-        {
-            window.WindowState = window.WindowState == WindowState.Maximized
-                ? WindowState.Normal
-                : WindowState.Maximized;
-        }
-    }
-
-    private void OnClose(object? sender, RoutedEventArgs e) => Host?.Close();
 }

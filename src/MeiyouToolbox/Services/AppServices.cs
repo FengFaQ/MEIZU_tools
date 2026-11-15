@@ -52,7 +52,12 @@ public static class AppServices
         services.AddSingleton<ISlotService, SlotService>();
         services.AddSingleton<ICleanService, CleanService>();
 
+        // 模式切换与任务收尾（解锁 / 上锁自动化，以及"完成任务提示"的两个按钮）
+        services.AddSingleton<IDeviceModeService, DeviceModeService>();
+        services.AddSingleton<IPostTaskService, PostTaskService>();
+
         // 视图模型
+        services.AddSingleton<TaskCompleteViewModel>();
         services.AddSingleton<OverviewViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<FlashViewModel>();

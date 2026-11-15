@@ -8,60 +8,26 @@
              x:DataType="vm:MainViewModel">
 
     <UserControl.Styles>
-        <!-- 侧栏导航：用 Arc 的 Button(Text/Ghost 变体) 承载，颜色走令牌 -->
+        <!-- 侧栏导航：按钮本身始终是"被选中"外观（Secondary 变体常亮），
+             当前页靠左侧的强调色竖条区分。 -->
         <Style Selector="arc|Button.nav">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Margin" Value="6,2" />
+            <Setter Property="Margin" Value="6,3" />
+        </Style>
+        <Style Selector="Border.navmark">
+            <Setter Property="Width" Value="3" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.navmark.on">
+            <Setter Property="Background" Value="{arc:ArcDesignTokenResource Foreground}" />
         </Style>
     </UserControl.Styles>
 
     <DockPanel ClipToBounds="True">
-
-        <!-- ============ 顶栏 ============ -->
-        <Border DockPanel.Dock="Top"
-                Height="44"
-                Padding="6,0"
-                Background="{arc:ArcDesignTokenResource Surface}"
-                BorderThickness="0,0,0,1"
-                BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-
-                <!-- 侧栏展开 / 收起 -->
-                <arc:Button Grid.Column="0" Variant="Text"
-                            Command="{Binding ToggleSidebarCommand}"
-                            ToolTip.Tip="显示 / 隐藏侧栏">
-                    <lucide:LucideIcon Kind="PanelLeft" Size="16" />
-                </arc:Button>
-
-                <!-- 文件 / 更新 / 截图 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2"
-                            Margin="6,0,0,0" VerticalAlignment="Center">
-                    <arc:Button Variant="Text" Content="文件" />
-                    <arc:Button Variant="Text" Content="更新" />
-                    <arc:Button Variant="Text" Content="截图"
-                                Command="{Binding CaptureScreenshotCommand}"
-                                ToolTip.Tip="把当前窗口截图保存到 screenshots 目录" />
-                </StackPanel>
-
-                <!-- 中间留空 -->
-                <Border Grid.Column="2" Background="Transparent" />
-
-                <!-- 最小化 / 最大化 / 关闭 -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2"
-                            VerticalAlignment="Center">
-                    <arc:Button Variant="Text" Click="OnMinimize" ToolTip.Tip="最小化">
-                        <lucide:LucideIcon Kind="Minus" Size="14" />
-                    </arc:Button>
-                    <arc:Button Variant="Text" Click="OnToggleMaximize" ToolTip.Tip="最大化 / 还原">
-                        <lucide:LucideIcon Kind="Square" Size="11" />
-                    </arc:Button>
-                    <arc:Button Variant="Text" Click="OnClose" ToolTip.Tip="关闭">
-                        <lucide:LucideIcon Kind="X" Size="14" />
-                    </arc:Button>
-                </StackPanel>
-            </Grid>
-        </Border>
 
         <!-- ============ 侧栏 ============ -->
         <Border DockPanel.Dock="Left"
@@ -73,53 +39,64 @@
             <DockPanel LastChildFill="True">
 
                 <!-- 上方 4 项 -->
-                <StackPanel DockPanel.Dock="Top" Margin="4,10,4,0" Spacing="2">
-                    <arc:Button Classes="nav"
-                                Variant="{Binding IsOverview, Converter={StaticResource NavVariantConverter}}"
+                <StackPanel DockPanel.Dock="Top" Margin="4,12,4,0" Spacing="2">
+                    <arc:Button Classes="nav" Variant="Secondary"
                                 Command="{Binding NavigateCommand}" CommandParameter="Overview">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <lucide:LucideIcon Kind="LayoutDashboard" Size="16" />
-                            <TextBlock Text="概览" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <DockPanel>
+                            <Border Classes="navmark" Classes.on="{Binding IsOverview}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="8,0,0,0">
+                                <lucide:LucideIcon Kind="LayoutDashboard" Size="16" />
+                                <TextBlock Text="概览" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DockPanel>
                     </arc:Button>
 
-                    <arc:Button Classes="nav"
-                                Variant="{Binding IsFlash, Converter={StaticResource NavVariantConverter}}"
+                    <arc:Button Classes="nav" Variant="Secondary"
                                 Command="{Binding NavigateCommand}" CommandParameter="Flash">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <lucide:LucideIcon Kind="Zap" Size="16" />
-                            <TextBlock Text="刷机" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <DockPanel>
+                            <Border Classes="navmark" Classes.on="{Binding IsFlash}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="8,0,0,0">
+                                <lucide:LucideIcon Kind="Zap" Size="16" />
+                                <TextBlock Text="刷机" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DockPanel>
                     </arc:Button>
 
-                    <arc:Button Classes="nav"
-                                Variant="{Binding IsBackup, Converter={StaticResource NavVariantConverter}}"
+                    <arc:Button Classes="nav" Variant="Secondary"
                                 Command="{Binding NavigateCommand}" CommandParameter="Backup">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <lucide:LucideIcon Kind="HardDriveDownload" Size="16" />
-                            <TextBlock Text="备份" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <DockPanel>
+                            <Border Classes="navmark" Classes.on="{Binding IsBackup}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="8,0,0,0">
+                                <lucide:LucideIcon Kind="HardDriveDownload" Size="16" />
+                                <TextBlock Text="备份" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DockPanel>
                     </arc:Button>
 
-                    <arc:Button Classes="nav"
-                                Variant="{Binding IsManage, Converter={StaticResource NavVariantConverter}}"
+                    <arc:Button Classes="nav" Variant="Secondary"
                                 Command="{Binding NavigateCommand}" CommandParameter="Manage">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <lucide:LucideIcon Kind="Wrench" Size="16" />
-                            <TextBlock Text="管理" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <DockPanel>
+                            <Border Classes="navmark" Classes.on="{Binding IsManage}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="8,0,0,0">
+                                <lucide:LucideIcon Kind="Wrench" Size="16" />
+                                <TextBlock Text="管理" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DockPanel>
                     </arc:Button>
                 </StackPanel>
 
                 <!-- 设置固定在最下方 -->
                 <arc:Button DockPanel.Dock="Bottom" Classes="nav"
-                            Margin="4,0,4,10"
-                            Variant="{Binding IsSettings, Converter={StaticResource NavVariantConverter}}"
+                            Margin="4,0,4,12"
+                            Variant="Secondary"
                             Command="{Binding NavigateCommand}" CommandParameter="Settings">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <lucide:LucideIcon Kind="Settings" Size="16" />
-                        <TextBlock Text="设置" VerticalAlignment="Center" />
-                    </StackPanel>
+                    <DockPanel>
+                        <Border Classes="navmark" Classes.on="{Binding IsSettings}" />
+                        <StackPanel Orientation="Horizontal" Spacing="10" Margin="8,0,0,0">
+                            <lucide:LucideIcon Kind="Settings" Size="16" />
+                            <TextBlock Text="设置" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DockPanel>
                 </arc:Button>
 
                 <!-- 中间留白 -->
@@ -148,6 +125,9 @@
             <Border IsVisible="{Binding IsSettings}">
                 <views:SettingsView DataContext="{Binding Settings}" />
             </Border>
+
+            <!-- 「完成任务提示」：全窗口共用的收尾遮罩，任何页面都能触发 -->
+            <views:TaskCompleteOverlay DataContext="{Binding TaskComplete}" />
         </Grid>
     </DockPanel>
 </UserControl>

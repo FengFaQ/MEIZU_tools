@@ -18,12 +18,14 @@
 
         <!-- ==== 目录结构：让运行目录保持简洁 ====
              约定（发布后）：
-               <程序目录>\
-                 MeiyouToolbox.exe
-                 lib\        所有依赖 DLL
-                 logs\       运行日志（程序内创建）
-                 screenshots\内置截图（程序内创建）
-                 tools\      adb / fastboot 等外部工具（用户或后续下载）
+                <程序目录>\
+                  MeiyouToolbox.exe
+                  lib\         所有依赖 DLL
+                  logs\        运行日志（程序内创建）
+                  screenshots\ 内置截图（程序内创建）
+                  profiles\    解锁码 / 授权码 / mzkv（程序内创建）
+                  backups\     备份产物（程序内创建）
+                  Tools\       随包工具链（见下方 Tools 条目）
         -->
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
@@ -46,7 +48,24 @@
             需要在运行时动态决定、或通过绑定/数据模板选中的图标必须在此显式声明，
             否则不会打包，运行时不显示（且不报错，只在日志留 warning）。
         -->
-        <LucideIcon Include="Activity;Archive;ArrowLeftRight;Cable;CircleCheck;CircleX;Cpu;Database;Download;Eraser;FileArchive;FileDown;FolderDown;FolderOpen;HardDrive;HardDriveDownload;Import;Info;Key;Layers;LayoutDashboard;ListChecks;Loader;Lock;MemoryStick;Minus;MonitorCog;Package;Paintbrush;PanelLeft;Play;Radio;RefreshCw;RotateCcw;ScanLine;Settings;ShieldAlert;ShieldCheck;Signal;Smartphone;Square;Terminal;TriangleAlert;Unlock;Upload;Usb;Wand2;Wrench;X;Zap" />
+        <LucideIcon Include="Activity;Archive;ArrowLeftRight;Cable;CircleCheck;CircleDot;CircleX;Cpu;Database;Download;Eraser;FileArchive;FileDown;FileUp;FolderDown;FolderOpen;HardDrive;HardDriveDownload;Import;Info;Key;Layers;LayoutDashboard;ListChecks;Loader;Lock;MemoryStick;Minus;MonitorCog;Package;Paintbrush;PanelLeft;Play;Power;Radio;RefreshCw;RotateCcw;ScanLine;Settings;ShieldAlert;ShieldCheck;Signal;Smartphone;Square;Terminal;Trash2;TriangleAlert;Unlock;Upload;Usb;Wand2;Wrench;X;Zap" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!--
+            随包工具链（约 105 MB），布局对齐原魅族工具箱：
+              Tools\Win\      Windows 端 exe —— adb / fastboot / QSaharaServer / fh_loader /
+                              qcedlcmdhelper / gpttool / simg_dump / QCNTool / 7z …
+              Tools\Android\  推送到手机的二进制 —— busybox / mke2fs / mkntfs / misc_*.img
+              Tools\Other\    杂项
+              Tools\res\      各机型的 9008 programmer（res\<product>\devprg）
+            这些文件在仓库里（.gitignore 不忽略），构建时原样复制到输出目录；
+            CI 打出来的产物即自带工具链，用户解压后无需再单独下载 adb / fastboot。
+        -->
+        <None Include="Tools\**\*"
+              Exclude="Tools\**\*.log;Tools\**\*.tmp"
+              CopyToOutputDirectory="PreserveNewest"
+              CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>

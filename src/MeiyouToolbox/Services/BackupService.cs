@@ -201,7 +201,7 @@ public sealed class BackupService : IBackupService
             Directory.CreateDirectory(dir);
         }
 
-        CopyReadmeFiles(romDir);
+        WriteRomMakerReadme(romDir);
 
         var work = CreateWorkDirectory();
         var memory = await ResolveMemoryAsync(port, request.Memory, work, cancellationToken)
@@ -655,25 +655,37 @@ public sealed class BackupService : IBackupService
         return full;
     }
 
-    private void CopyReadmeFiles(string romDir)
+    /// <summary>
+    /// 在 for_ROM_maker 下写一份说明。
+    /// 原实现是从 qctool 目录复制官方 ReadAllFunc 说明，但那份文件随工具链分发、不在本仓库里，
+    /// 缺失时整段逻辑静默失效；这里改为自己生成，保证任何情况下都有说明可看。
+    /// </summary>
+    private void WriteRomMakerReadme(string romDir)
     {
-        var candidates = new[]
-        {
-            Path.Combine(_tools.ToolsDirectory, "qctool", "ReadAllFunc_Readme_Chs.txt"),
-            Path.Combine(_tools.ToolsDirectory, "ReadAllFunc_Readme_Chs.txt"),
-        };
+        var sb = new StringBuilder();
+        sb.AppendLine("本目录由魅友工具箱的「备份全分区」生成。");
+        sb.AppendLine();
+        sb.AppendLine("orig/      原始分区表与 rawprogram XML（未做任何修改）");
+        sb.AppendLine("generate/  ptool 按 partition.xml 生成的可刷写 XML");
+        sb.AppendLine("images/    各分区镜像（9008 直接刷就用这个目录）");
+        sb.AppendLine();
+        sb.AppendLine("整包就是一份 9008 线刷包，可在「刷机 - 镜像刷写 - 9008 刷写」里直接选择本目录刷入。");
+        sb.AppendLine("注意：包内 private / mzkv 分区决定 Bootloader 锁状态，解锁前做的备份在解锁后使用会重新上锁。");
 
-        foreach (var source in candidates.Where(File.Exists))
+        try
         {
-            try
-            {
-                File.Copy(source, Path.Combine(romDir, "本目录说明.txt"), overwrite: true);
-                break;
-            }
-            catch (IOException)
-            {
-                // 说明文件复制失败不影响备份本身。
-            }
+            File.WriteAllText(
+                Path.Combine(romDir, "本目录说明.txt"),
+                sb.ToString(),
+                new UTF8Encoding(false));
+        }
+        catch (IOException)
+        {
+            // 说明文件写不出来不影响备份本身。
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // 同上。
         }
     }
 

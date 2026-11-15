@@ -26,6 +26,7 @@ public sealed partial class MainViewModel : ObservableObject
         BackupViewModel backup,
         ManageViewModel manage,
         SettingsViewModel settings,
+        TaskCompleteViewModel taskComplete,
         IScreenshotService screenshots,
         IAppLogger logger)
     {
@@ -34,6 +35,7 @@ public sealed partial class MainViewModel : ObservableObject
         Backup = backup;
         Manage = manage;
         Settings = settings;
+        TaskComplete = taskComplete;
         _screenshots = screenshots;
         _logger = logger;
 
@@ -48,6 +50,7 @@ public sealed partial class MainViewModel : ObservableObject
         Backup = null!;
         Manage = null!;
         Settings = null!;
+        TaskComplete = null!;
     }
 
     public OverviewViewModel Overview { get; }
@@ -59,6 +62,9 @@ public sealed partial class MainViewModel : ObservableObject
     public ManageViewModel Manage { get; }
 
     public SettingsViewModel Settings { get; }
+
+    /// <summary>「完成任务提示」—— 全窗口共用的收尾提示层。</summary>
+    public TaskCompleteViewModel TaskComplete { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOverview), nameof(IsFlash), nameof(IsBackup), nameof(IsManage), nameof(IsSettings), nameof(Title))]

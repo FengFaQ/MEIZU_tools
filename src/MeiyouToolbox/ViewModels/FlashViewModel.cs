@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Windows.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,12 +7,19 @@ using MeiyouToolbox.Services;
 
 namespace MeiyouToolbox.ViewModels;
 
+/// <summary>刷机页里"镜像刷写"的两种目标通路。</summary>
+public enum FlashTarget
+{
+    Edl,
+    Fastboot,
+}
+
 /// <summary>
-/// 刷机页。解锁 / 上锁 / 刷 Recovery / 写分区 / 9008 线刷，对应参考实现主菜单的基础操作。
+/// 刷机页。解锁 / 上锁 / 镜像刷写 / 刷 Recovery / 写分区。
 /// <para>
-/// 设计要点：每个动作在执行前先说明缺什么（机型、资料、连接通路），
-/// 而不是像参考实现那样跑一半才弹一句错误。所有界面属性都经 <see cref="Post"/> 修改，
-/// 保证跨线程安全。
+/// 与参考实现的关键差别：解锁与上锁不再要求用户先自己把手机切到正确状态，
+/// 而是点下按钮后由 <see cref="IDeviceModeService"/> 自动从任何已知状态重启到位；
+/// 任务结束后统一弹「完成任务提示」，把"清空数据并开机 / 直接开机"固化成一个可复用环节。
 /// </para>
 /// </summary>
 public sealed partial class FlashViewModel : ObservableObject
@@ -22,7 +28,9 @@ public sealed partial class FlashViewModel : ObservableObject
     private readonly ICredentialStore _credentials;
     private readonly IFlashService _flash;
     private readonly IDeviceService _devices;
+    private readonly IDeviceModeService _modes;
     private readonly IToolLocator _tools;
+    private readonly TaskCompleteViewModel _taskComplete;
     private readonly IAppLogger _logger;
 
     private CancellationTokenSource? _cts;
@@ -32,20 +40,23 @@ public sealed partial class FlashViewModel : ObservableObject
         ICredentialStore credentials,
         IFlashService flash,
         IDeviceService devices,
+        IDeviceModeService modes,
         IToolLocator tools,
+        TaskCompleteViewModel taskComplete,
         IAppLogger logger)
     {
         _catalog = catalog;
         _credentials = credentials;
         _flash = flash;
         _devices = devices;
+        _modes = modes;
         _tools = tools;
+        _taskComplete = taskComplete;
         _logger = logger;
 
         Profiles = new ObservableCollection<DeviceProfile>(_catalog.All);
         LogLines = [];
 
-        // 默认选中第一个可用机型，避免下拉框空白。
         if (Profiles.Count > 0)
         {
             _selectedProfile = Profiles[0];
@@ -62,7 +73,9 @@ public sealed partial class FlashViewModel : ObservableObject
         _credentials = null!;
         _flash = null!;
         _devices = null!;
+        _modes = null!;
         _tools = null!;
+        _taskComplete = null!;
         _logger = null!;
 
         Profiles = [];
@@ -81,7 +94,14 @@ public sealed partial class FlashViewModel : ObservableObject
         nameof(HasProfile),
         nameof(ImportCodesHint),
         nameof(IsOdmDevice),
-        nameof(SelectedProduct))]
+        nameof(SelectedProduct),
+        nameof(UnlockRequiresModeText))]
+    [NotifyCanExecuteChangedFor(
+        nameof(UnlockCommand),
+        nameof(LockCommand),
+        nameof(FlashRecoveryCommand),
+        nameof(FlashPartitionCommand),
+        nameof(SendFirehoseCommand))]
     private DeviceProfile? _selectedProfile;
 
     public bool HasProfile => SelectedProfile is not null;
@@ -123,7 +143,7 @@ public sealed partial class FlashViewModel : ObservableObject
         nameof(LockCommand),
         nameof(FlashRecoveryCommand),
         nameof(FlashPartitionCommand),
-        nameof(FlashFullPackageCommand),
+        nameof(FlashPackageCommand),
         nameof(SendFirehoseCommand))]
     private ConnectionMode _connection = ConnectionMode.None;
 
@@ -131,7 +151,6 @@ public sealed partial class FlashViewModel : ObservableObject
 
     public string ConnectionText => Connection.Display();
 
-    /// <summary>当前连接方式是否允许刷写。</summary>
     public bool CanFlashHere => _flash is not null && _flash.ResolveTransport(Connection) is not null;
 
     /// <summary>9008 端口号（有就显示，没有就留空）。</summary>
@@ -154,7 +173,6 @@ public sealed partial class FlashViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasMzkv;
 
-    /// <summary>当前机型需要导入哪些东西（显式提示，而不是让用户猜）。</summary>
     public string ImportCodesHint
     {
         get
@@ -191,6 +209,32 @@ public sealed partial class FlashViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// 解锁时需要的连接状态。由解锁方案决定，界面上直接告诉用户"点下去会自动切到 X"。
+    /// </summary>
+    public string UnlockRequiresModeText
+    {
+        get
+        {
+            if (SelectedProfile is not { } p)
+            {
+                return string.Empty;
+            }
+
+            return p.UnlockPlan switch
+            {
+                UnlockPlan.AuthPrivate when _credentials is not null && _credentials.Load(p.Product).HasAuthCode
+                    => "会自动切到 9008 模式",
+                UnlockPlan.AuthPrivate => "会自动切到 Fastboot 模式",
+                UnlockPlan.AuthMzkvSig or UnlockPlan.AuthMzkvNoSig => "会自动切到 9008 模式",
+                UnlockPlan.Odm1 => "会自动切到 9008 模式",
+                UnlockPlan.Odm2 => "会自动切到 Fastboot 模式",
+                UnlockPlan.OdmNote8 => "会自动切到 Fastboot 模式",
+                _ => "该机型未声明解锁方案",
+            };
+        }
+    }
+
     // ------------------------------------------------------------------
     // 工具可用性
     // ------------------------------------------------------------------
@@ -206,7 +250,14 @@ public sealed partial class FlashViewModel : ObservableObject
     // ------------------------------------------------------------------
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
+    [NotifyCanExecuteChangedFor(
+        nameof(CancelCommand),
+        nameof(UnlockCommand),
+        nameof(LockCommand),
+        nameof(FlashPackageCommand),
+        nameof(FlashRecoveryCommand),
+        nameof(FlashPartitionCommand),
+        nameof(SendFirehoseCommand))]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -224,7 +275,6 @@ public sealed partial class FlashViewModel : ObservableObject
     [ObservableProperty]
     private bool _taskFailed;
 
-    /// <summary>实时输出。用 ObservableCollection 是为了随刷写过程滚动可见。</summary>
     public ObservableCollection<string> LogLines { get; }
 
     // ------------------------------------------------------------------
@@ -240,29 +290,89 @@ public sealed partial class FlashViewModel : ObservableObject
     [ObservableProperty]
     private string? _partitionImagePath;
 
+    /// <summary>刷入镜像：单个输入框，支持 9008 线刷包目录或 fastboot 镜像文件。</summary>
     [ObservableProperty]
-    private string? _packageDirectory;
+    [NotifyPropertyChangedFor(nameof(PackageKindText), nameof(IsPackageDirectory), nameof(HasPackagePath))]
+    [NotifyCanExecuteChangedFor(nameof(FlashPackageCommand))]
+    private string? _packagePath;
 
     [ObservableProperty]
     private string? _programmerPath;
 
-    /// <summary>界面上正在编辑的解锁码（导入前）。</summary>
     [ObservableProperty]
     private string? _unlockCodeInput;
 
-    /// <summary>界面上正在编辑的授权码（导入前）。</summary>
     [ObservableProperty]
     private string? _authCodeInput;
+
+    /// <summary>镜像刷写当前选中的通路，决定"刷入"按钮走哪条路。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FlashTargetText), nameof(FlashHereButtonText))]
+    [NotifyCanExecuteChangedFor(nameof(FlashPackageCommand))]
+    private FlashTarget _selectedTarget = FlashTarget.Edl;
+
+    public string FlashTargetText => SelectedTarget == FlashTarget.Edl ? "9008 刷写" : "Fastboot 刷写";
+
+    public string FlashHereButtonText => "刷入";
+
+    /// <summary>通路选择子窗口是否可见（在窗口内自渲染，不开新窗口）。</summary>
+    [ObservableProperty]
+    private bool _isTargetPickerOpen;
+
+    public bool HasPackagePath => !string.IsNullOrWhiteSpace(PackagePath);
+
+    public bool IsPackageDirectory =>
+        !string.IsNullOrWhiteSpace(PackagePath) && Directory.Exists(PackagePath);
+
+    /// <summary>根据输入路径判断是线刷包目录还是单个镜像，给界面一个即时反馈。</summary>
+    public string PackageKindText
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(PackagePath))
+            {
+                return "未选择";
+            }
+
+            if (Directory.Exists(PackagePath))
+            {
+                var xmlCount = 0;
+                try
+                {
+                    xmlCount = Directory.GetFiles(PackagePath, "rawprogram*.xml", SearchOption.AllDirectories).Length;
+                }
+                catch (Exception)
+                {
+                    // 目录不可读时按普通目录处理。
+                }
+
+                return xmlCount > 0
+                    ? $"9008 线刷包（{xmlCount} 个 rawprogram xml）"
+                    : "目录（未找到 rawprogram*.xml，可能不是线刷包）";
+            }
+
+            if (File.Exists(PackagePath))
+            {
+                var ext = Path.GetExtension(PackagePath).ToLowerInvariant();
+                return ext switch
+                {
+                    ".img" or ".bin" or ".mbn" => $"镜像文件（{ext}）",
+                    ".zip" => "压缩包（需解包后再刷）",
+                    _ => $"文件（{ext}）",
+                };
+            }
+
+            return "路径不存在";
+        }
+    }
 
     // ------------------------------------------------------------------
     // 命令：资料导入
     // ------------------------------------------------------------------
 
-    /// <summary>保存粘贴进来的解锁码。</summary>
     [RelayCommand]
     private void SaveUnlockCode() => SaveCode(UnlockCodeInput, isAuthCode: false);
 
-    /// <summary>保存粘贴进来的授权码。</summary>
     [RelayCommand]
     private void SaveAuthCode() => SaveCode(AuthCodeInput, isAuthCode: true);
 
@@ -280,9 +390,9 @@ public sealed partial class FlashViewModel : ObservableObject
 
         Report(result.Message, failed: !result.Success);
         RefreshCredentialState();
+        OnPropertyChanged(nameof(UnlockRequiresModeText));
     }
 
-    /// <summary>导入 mzkv 镜像。参数是绝对路径（由视图的文件选择器给出）。</summary>
     [RelayCommand]
     private void ImportMzkv(string? path)
     {
@@ -313,15 +423,16 @@ public sealed partial class FlashViewModel : ObservableObject
         _credentials.Clear(profile.Product);
         RefreshCredentialState();
         Report($"{profile.Product} 的资料已清空");
+        OnPropertyChanged(nameof(UnlockRequiresModeText));
     }
 
     // ------------------------------------------------------------------
-    // 命令：刷机动作
+    // 命令：解锁 / 上锁（自动切模式）
     // ------------------------------------------------------------------
 
-    private bool CanRunAction() => !IsBusy && SelectedProfile is not null;
+    private bool CanRunUnlock() => !IsBusy && SelectedProfile is not null;
 
-    [RelayCommand(CanExecute = nameof(CanRunAction))]
+    [RelayCommand(CanExecute = nameof(CanRunUnlock))]
     private async Task UnlockAsync()
     {
         if (SelectedProfile is not { } profile)
@@ -329,20 +440,39 @@ public sealed partial class FlashViewModel : ObservableObject
             return;
         }
 
-        await RunAsync($"解锁 BL · {profile.Model}", async token =>
-        {
-            var credentials = _credentials.Load(profile.Product);
-            var progress = CreateFlashProgress();
+        var targetMode = RequiredModeForUnlock(profile);
+        var taskName = $"解锁 Bootloader · {profile.Model}";
 
+        var ok = await RunAsync(taskName, async token =>
+        {
+            // 第一步：自动把设备切到解锁所需的状态。
+            Report($"正在把设备切换到 {targetMode.Display()}…");
+
+            var navigation = await _modes.EnsureModeAsync(
+                targetMode, EdlPort, ResolveStorage(profile), CreateFlashProgress(), token)
+                .ConfigureAwait(true);
+
+            if (!navigation.Success)
+            {
+                return FlashResult.Fail(navigation.Message);
+            }
+
+            // 切模式后端口可能变了，重新读一次。
+            await ReReadPortAsync(navigation.Mode).ConfigureAwait(true);
+
+            // 第二步：完全移植原工具箱的解锁流程。
+            var credentials = _credentials.Load(profile.Product);
             var result = await _flash.UnlockBootloaderAsync(
-                profile, credentials, Connection, EdlPort,
-                ResolveStorage(profile), progress, token).ConfigureAwait(true);
+                profile, credentials, navigation.Mode, EdlPort,
+                ResolveStorage(profile), CreateFlashProgress(), token).ConfigureAwait(true);
 
             return result;
         }).ConfigureAwait(true);
+
+        ShowTaskComplete(taskName, ok);
     }
 
-    [RelayCommand(CanExecute = nameof(CanRunAction))]
+    [RelayCommand(CanExecute = nameof(CanRunUnlock))]
     private async Task LockAsync()
     {
         if (SelectedProfile is not { } profile)
@@ -350,14 +480,253 @@ public sealed partial class FlashViewModel : ObservableObject
             return;
         }
 
-        await RunAsync($"上锁 BL · {profile.Model}", async token =>
+        var taskName = $"上锁 Bootloader · {profile.Model}";
+
+        var ok = await RunAsync(taskName, async token =>
         {
-            var progress = CreateFlashProgress();
-            return await _flash.LockBootloaderAsync(
-                profile, Connection, EdlPort, ResolveStorage(profile), progress, token)
-                .ConfigureAwait(true);
+            // 上锁必须走 Fastboot（原工具箱的顺序：先刷 misc 再 oem lock）。
+            Report("正在把设备切换到 Fastboot 模式…");
+
+            var navigation = await _modes.EnsureModeAsync(
+                ConnectionMode.Fastboot, EdlPort, ResolveStorage(profile),
+                CreateFlashProgress(), token).ConfigureAwait(true);
+
+            if (!navigation.Success)
+            {
+                return FlashResult.Fail(navigation.Message);
+            }
+
+            var result = await _flash.LockBootloaderAsync(
+                profile, navigation.Mode, EdlPort, ResolveStorage(profile),
+                CreateFlashProgress(), token).ConfigureAwait(true);
+
+            return result;
         }).ConfigureAwait(true);
+
+        ShowTaskComplete(taskName, ok);
     }
+
+    /// <summary>解锁方案 → 需要的连接状态。见参考实现 `goto UNLOCKBL-%blplan%` 的分支条件。</summary>
+    private ConnectionMode RequiredModeForUnlock(DeviceProfile profile)
+    {
+        // meizu20inf 不支持 9008，原工具箱在 L299 硬编码走 Fastboot。
+        if (string.Equals(profile.Product, "meizu20inf", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectionMode.Fastboot;
+        }
+
+        return profile.UnlockPlan switch
+        {
+            UnlockPlan.AuthPrivate =>
+                _credentials.Load(profile.Product).HasAuthCode
+                    ? ConnectionMode.QcEdl
+                    : ConnectionMode.Fastboot,
+            UnlockPlan.AuthMzkvSig or UnlockPlan.AuthMzkvNoSig => ConnectionMode.QcEdl,
+            UnlockPlan.Odm1 => ConnectionMode.QcEdl,
+            UnlockPlan.Odm2 => ConnectionMode.Fastboot,
+            UnlockPlan.OdmNote8 => ConnectionMode.Fastboot,
+            _ => ConnectionMode.None,
+        };
+    }
+
+    // ------------------------------------------------------------------
+    // 命令：镜像刷写（9008 / fastboot 两条通路）
+    // ------------------------------------------------------------------
+
+    private bool CanFlashPackage() => !IsBusy && !string.IsNullOrWhiteSpace(PackagePath);
+
+    /// <summary>
+    /// 刷入：按 <see cref="SelectedTarget"/> 决定走 9008 线刷还是 fastboot 刷写。
+    /// 输入是目录 → 9008 整包；输入是镜像文件 → 单分区刷写。
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanFlashPackage))]
+    private async Task FlashPackageAsync()
+    {
+        var path = PackagePath?.Trim();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            Report("请先选择救砖包位置", failed: true);
+            return;
+        }
+
+        if (SelectedTarget == FlashTarget.Edl)
+        {
+            await FlashViaEdlAsync(path).ConfigureAwait(true);
+        }
+        else
+        {
+            await FlashViaFastbootAsync(path).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>9008 线刷：自动选引导文件、自动选存储、自动选串口。</summary>
+    private async Task FlashViaEdlAsync(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            Report("9008 刷写需要一个线刷包目录（含 rawprogram*.xml）", failed: true);
+            return;
+        }
+
+        var profile = SelectedProfile;
+        var taskName = $"9008 线刷 · {profile?.Model ?? path}";
+
+        // 引导文件：界面填了就用，否则按机型自动找。
+        var programmer = ProgrammerPath;
+        if (string.IsNullOrWhiteSpace(programmer) || !File.Exists(programmer))
+        {
+            programmer = _tools.FindProgrammer(profile?.Product);
+            if (programmer is null)
+            {
+                Report(
+                    $"{profile?.Model ?? "当前机型"} 缺少 9008 引导文件（devprg）。" +
+                    "请在界面上手动指定，或确认 Tools\\res\\<代号>\\devprg 存在。", failed: true);
+                return;
+            }
+
+            ProgrammerPath = programmer;
+            Report($"已自动选择引导文件：{Path.GetFileName(programmer)}");
+        }
+
+        var ok = await RunAsync(taskName, async token =>
+        {
+            var credentials = profile is { } p ? _credentials.Load(p.Product) : null;
+
+            return await _flash.FlashRawPackageAsync(
+                path, EdlPort, ResolveStorage(profile), programmer,
+                credentials?.AuthCode, CreateFlashProgress(), token).ConfigureAwait(true);
+        }).ConfigureAwait(true);
+
+        ShowTaskComplete(taskName, ok);
+    }
+
+    /// <summary>Fastboot 刷写：单镜像按文件名猜分区名；目录则逐个刷。</summary>
+    private async Task FlashViaFastbootAsync(string path)
+    {
+        if (File.Exists(path))
+        {
+            var partition = PartitionName;
+            if (string.IsNullOrWhiteSpace(partition))
+            {
+                // 用文件名当分区名，这是最通行的约定（boot.img → boot）。
+                partition = Path.GetFileNameWithoutExtension(path);
+                // 去掉常见的 _a/_b 后缀与 -magisk 之类修饰。
+                partition = partition.Split('_')[0].Split('-')[0];
+                PartitionName = partition;
+                Report($"已按文件名推断分区名：{partition}（可手动修改）");
+            }
+
+            var taskName = $"Fastboot 刷写 {partition}";
+            var ok = await RunAsync(taskName, async token =>
+            {
+                var navigation = await EnsureFastbootAsync(token).ConfigureAwait(true);
+                if (!navigation.Success)
+                {
+                    return FlashResult.Fail(navigation.Message);
+                }
+
+                return await _flash.FlashPartitionAsync(
+                    partition!, path, navigation.Mode, EdlPort,
+                    ResolveStorage(SelectedProfile), CreateFlashProgress(), token).ConfigureAwait(true);
+            }).ConfigureAwait(true);
+
+            ShowTaskComplete(taskName, ok);
+            return;
+        }
+
+        if (Directory.Exists(path))
+        {
+            // 目录：所有 .img 逐个刷，文件名即分区名。
+            var images = Directory.GetFiles(path, "*.img", SearchOption.TopDirectoryOnly);
+            if (images.Length == 0)
+            {
+                Report("该目录下没有 .img 文件", failed: true);
+                return;
+            }
+
+            var taskName = $"Fastboot 批量刷写 · {images.Length} 个镜像";
+            var ok = await RunAsync(taskName, async token =>
+            {
+                var navigation = await EnsureFastbootAsync(token).ConfigureAwait(true);
+                if (!navigation.Success)
+                {
+                    return FlashResult.Fail(navigation.Message);
+                }
+
+                var failed = new List<string>();
+                for (var i = 0; i < images.Length; i++)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        return FlashResult.Fail("已取消");
+                    }
+
+                    var image = images[i];
+                    var partition = Path.GetFileNameWithoutExtension(image).Split('_')[0].Split('-')[0];
+
+                    Report($"[{i + 1}/{images.Length}] 刷入 {partition}…");
+
+                    var one = await _flash.FlashPartitionAsync(
+                        partition, image, navigation.Mode, EdlPort,
+                        ResolveStorage(SelectedProfile), CreateFlashProgress(), token).ConfigureAwait(true);
+
+                    if (!one.Success)
+                    {
+                        failed.Add($"{partition}（{one.Message}）");
+                    }
+                }
+
+                return failed.Count == 0
+                    ? FlashResult.Ok($"全部 {images.Length} 个镜像刷写完成")
+                    : FlashResult.Fail("以下分区刷写失败：" + string.Join("；", failed));
+            }).ConfigureAwait(true);
+
+            ShowTaskComplete(taskName, ok);
+            return;
+        }
+
+        Report("路径不存在，请重新选择", failed: true);
+    }
+
+    private async Task<ModeNavigateResult> EnsureFastbootAsync(CancellationToken token)
+    {
+        Report("正在把设备切换到 Fastboot 模式…");
+        var navigation = await _modes.EnsureModeAsync(
+            ConnectionMode.Fastboot, EdlPort, ResolveStorage(SelectedProfile),
+            CreateFlashProgress(), token).ConfigureAwait(true);
+
+        if (navigation.Success)
+        {
+            await ReReadPortAsync(navigation.Mode).ConfigureAwait(true);
+        }
+
+        return navigation;
+    }
+
+    /// <summary>切换通路（由子窗口的两个按钮调用）。</summary>
+    [RelayCommand]
+    private void SetTarget(string? target)
+    {
+        SelectedTarget = string.Equals(target, "fastboot", StringComparison.OrdinalIgnoreCase)
+            ? FlashTarget.Fastboot
+            : FlashTarget.Edl;
+
+        IsTargetPickerOpen = false;
+        Report($"刷写通路：{FlashTargetText}");
+    }
+
+    /// <summary>打开 / 关闭通路选择子窗口。</summary>
+    [RelayCommand]
+    private void ToggleTargetPicker() => IsTargetPickerOpen = !IsTargetPickerOpen;
+
+    [RelayCommand]
+    private void CloseTargetPicker() => IsTargetPickerOpen = false;
+
+    // ------------------------------------------------------------------
+    // 命令：其它刷写动作
+    // ------------------------------------------------------------------
+
+    private bool CanRunAction() => !IsBusy && SelectedProfile is not null;
 
     [RelayCommand(CanExecute = nameof(CanRunAction))]
     private async Task FlashRecoveryAsync()
@@ -375,19 +744,21 @@ public sealed partial class FlashViewModel : ObservableObject
 
         if (profile.Layout is PartitionLayout.Ab or PartitionLayout.AbRec)
         {
-            // A/B 设备没有独立 recovery 分区，刷进 recovery 会写坏 boot。
             Report(
                 $"{profile.Model} 是 A/B 分区设备，没有独立 recovery 分区。" +
                 "请改用「刷入任意分区」，目标是 boot 或 init_boot。", failed: true);
             return;
         }
 
-        await RunAsync($"刷入 Recovery · {profile.Model}", async token =>
+        var taskName = $"刷入 Recovery · {profile.Model}";
+        var ok = await RunAsync(taskName, async token =>
         {
             return await _flash.FlashPartitionAsync(
                 "recovery", RecoveryImagePath!, Connection, EdlPort,
                 ResolveStorage(profile), CreateFlashProgress(), token).ConfigureAwait(true);
         }).ConfigureAwait(true);
+
+        ShowTaskComplete(taskName, ok);
     }
 
     [RelayCommand(CanExecute = nameof(CanRunAction))]
@@ -405,36 +776,15 @@ public sealed partial class FlashViewModel : ObservableObject
             return;
         }
 
-        await RunAsync($"刷入分区 {PartitionName}", async token =>
+        var taskName = $"刷入分区 {PartitionName}";
+        var ok = await RunAsync(taskName, async token =>
         {
             return await _flash.FlashPartitionAsync(
                 PartitionName!.Trim(), PartitionImagePath!, Connection, EdlPort,
                 ResolveStorage(SelectedProfile), CreateFlashProgress(), token).ConfigureAwait(true);
         }).ConfigureAwait(true);
-    }
 
-    [RelayCommand(CanExecute = nameof(CanRunAction))]
-    private async Task FlashFullPackageAsync()
-    {
-        if (string.IsNullOrWhiteSpace(PackageDirectory) || !Directory.Exists(PackageDirectory))
-        {
-            Report("请选择 9008 线刷包目录", failed: true);
-            return;
-        }
-
-        await RunAsync("9008 线刷完整包", async token =>
-        {
-            var credentials = SelectedProfile is { } p
-                ? _credentials.Load(p.Product)
-                : null;
-
-            return await _flash.FlashRawPackageAsync(
-                PackageDirectory!, EdlPort,
-                ResolveStorage(SelectedProfile),
-                ProgrammerPath,
-                credentials?.AuthCode,
-                CreateFlashProgress(), token).ConfigureAwait(true);
-        }).ConfigureAwait(true);
+        ShowTaskComplete(taskName, ok);
     }
 
     [RelayCommand(CanExecute = nameof(CanRunAction))]
@@ -442,18 +792,23 @@ public sealed partial class FlashViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(ProgrammerPath) || !File.Exists(ProgrammerPath))
         {
-            Report("请先选择 Firehose 引导文件（prog_firehose_ddr.elf）", failed: true);
+            Report("请先选择 Firehose 引导文件（devprg）", failed: true);
             return;
         }
 
-        await RunAsync("9008 发送引导", async token =>
-        {
-            var credentials = SelectedProfile is { } p ? _credentials.Load(p.Product) : null;
+        var credentials = SelectedProfile is { } p ? _credentials.Load(p.Product) : null;
 
+        var ok = await RunAsync("9008 发送引导", async token =>
+        {
             return await _flash.SendFirehoseAsync(
                 EdlPort, ProgrammerPath!, ResolveStorage(SelectedProfile),
                 credentials?.AuthCode, CreateFlashProgress(), token).ConfigureAwait(true);
         }).ConfigureAwait(true);
+
+        if (!ok)
+        {
+            Report("发送引导失败，请检查端口与授权码", failed: true);
+        }
     }
 
     [RelayCommand(CanExecute = nameof(IsBusy))]
@@ -476,16 +831,7 @@ public sealed partial class FlashViewModel : ObservableObject
         {
             var info = await _devices.ProbeAsync().ConfigureAwait(true);
             Connection = info.Mode;
-
-            if (info.Mode == ConnectionMode.QcEdl && !string.IsNullOrWhiteSpace(info.SerialOrPort))
-            {
-                var port = info.SerialOrPort.Replace("COM", string.Empty, StringComparison.OrdinalIgnoreCase);
-                EdlPort = port.Trim();
-            }
-            else if (info.Mode != ConnectionMode.QcEdl)
-            {
-                EdlPort = null;
-            }
+            await ReReadPortAsync(info.Mode).ConfigureAwait(true);
 
             // 探测到设备时自动匹配机型（用户仍可手动改）。
             if (!HasProfile)
@@ -509,11 +855,38 @@ public sealed partial class FlashViewModel : ObservableObject
     {
         RefreshCredentialState();
         RefreshToolState();
+
+        // 换机型后清掉旧的引导文件，让它按新机型重新推导。
+        ProgrammerPath = null;
     }
 
     // ------------------------------------------------------------------
     // 内部
     // ------------------------------------------------------------------
+
+    /// <summary>把 <see cref="ConnectionMode"/> 对应的端口写进 <see cref="EdlPort"/>。</summary>
+    private async Task ReReadPortAsync(ConnectionMode mode)
+    {
+        if (mode != ConnectionMode.QcEdl)
+        {
+            return;
+        }
+
+        try
+        {
+            var info = await _devices.ProbeAsync().ConfigureAwait(true);
+            if (!string.IsNullOrWhiteSpace(info.SerialOrPort))
+            {
+                EdlPort = info.SerialOrPort
+                    .Replace("COM", string.Empty, StringComparison.OrdinalIgnoreCase)
+                    .Trim();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn($"读取 9008 端口失败：{ex.Message}");
+        }
+    }
 
     private static StorageKind ResolveStorage(DeviceProfile? profile) =>
         profile?.StorageType.ToLowerInvariant() switch
@@ -533,22 +906,39 @@ public sealed partial class FlashViewModel : ObservableObject
                 TaskIndeterminate = false;
             }
 
-            // 只把有意义的一行放进日志，避免刷写时几千行把界面刷爆。
             if (p.Message.Length > 0 && !p.Message.Contains('%'))
             {
                 Append(p.Message);
             }
         }));
 
-    /// <summary>
-    /// 统一的动作包装：状态复位 → 执行 → 结果落到 <see cref="TaskMessage"/>。
-    /// 所有 UI 更新都经过 <see cref="Post"/>，避免跨线程访问。
-    /// </summary>
-    private async Task RunAsync(string title, Func<CancellationToken, Task<FlashResult>> action)
+    /// <summary>任务结束后弹「完成任务提示」。返回是否成功。</summary>
+    private void ShowTaskComplete(string taskName, bool success)
+    {
+        if (_taskComplete is null)
+        {
+            return;
+        }
+
+        _taskComplete.Port = EdlPort;
+        _taskComplete.Memory = ResolveStorage(SelectedProfile);
+
+        if (success)
+        {
+            _taskComplete.Show(taskName, TaskMessage);
+        }
+        else
+        {
+            _taskComplete.ShowFailure(taskName, TaskMessage);
+        }
+    }
+
+    /// <summary>统一的动作包装：返回是否成功，供收尾提示判断。</summary>
+    private async Task<bool> RunAsync(string title, Func<CancellationToken, Task<FlashResult>> action)
     {
         if (IsBusy)
         {
-            return;
+            return false;
         }
 
         _cts = new CancellationTokenSource();
@@ -579,6 +969,7 @@ public sealed partial class FlashViewModel : ObservableObject
 
             _logger.Info($"{title}: {(result.Success ? "成功" : "失败")} — {result.Message}");
             RefreshCredentialState();
+            return result.Success;
         }
         catch (OperationCanceledException)
         {
@@ -590,6 +981,7 @@ public sealed partial class FlashViewModel : ObservableObject
             });
 
             _logger.Warn($"{title}: 用户取消");
+            return false;
         }
         catch (Exception ex)
         {
@@ -601,6 +993,7 @@ public sealed partial class FlashViewModel : ObservableObject
                 TaskIndeterminate = false;
                 Append($"✗ {ex}");
             });
+            return false;
         }
         finally
         {

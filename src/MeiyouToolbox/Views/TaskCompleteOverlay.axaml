@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:arc="https://github.com/AIDotNet/TKCode.Arc"
+             xmlns:lucide="https://github.com/AIDotNet/TKCode.Arc/lucide"
+             xmlns:vm="using:MeiyouToolbox.ViewModels"
+             x:Class="MeiyouToolbox.Views.TaskCompleteOverlay"
+             x:DataType="vm:TaskCompleteViewModel"
+             IsVisible="{Binding IsVisible}">
+
+    <!--
+        「完成任务提示」：窗口内自渲染的模态子窗口。
+        半透明遮罩铺满整个窗口，中央一张卡片。
+        任何页面只要拿到 TaskCompleteViewModel 就能复用，不必各写一份。
+    -->
+    <Grid Background="#66000000">
+
+        <Border Width="420"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                CornerRadius="12"
+                Padding="28"
+                Background="{arc:ArcDesignTokenResource Surface}"
+                BorderThickness="1"
+                BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
+                BoxShadow="0 8 32 0 #33000000">
+
+            <StackPanel Spacing="16">
+
+                <!-- 大字标题 -->
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <lucide:LucideIcon Kind="CircleCheck" Size="26" VerticalAlignment="Center"
+                                       IsVisible="{Binding IsSuccess}" />
+                    <lucide:LucideIcon Kind="CircleX" Size="26" VerticalAlignment="Center"
+                                       IsVisible="{Binding !IsSuccess}" />
+                    <TextBlock Text="{Binding Title}"
+                               FontSize="{arc:ArcDesignTokenResource TypeXL}"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                </StackPanel>
+
+                <Separator Background="{arc:ArcDesignTokenResource BorderSubtle}" Height="1" />
+
+                <!-- 任务名 + 状态 -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding TaskName}"
+                               FontSize="{arc:ArcDesignTokenResource TypeBase}"
+                               TextWrapping="Wrap"
+                               Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                    <Border Grid.Column="1"
+                            Padding="10,3"
+                            CornerRadius="4"
+                            VerticalAlignment="Center"
+                            Background="{arc:ArcDesignTokenResource SurfaceMuted}">
+                        <TextBlock Text="{Binding StatusText}"
+                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                   Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
+                    </Border>
+                </Grid>
+
+                <!-- 详细说明：成功可为空，失败是原因 -->
+                <TextBlock Text="{Binding Detail}"
+                           FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                           Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding HasDetail}" />
+
+                <!-- 收尾动作进行中的提示 -->
+                <StackPanel Spacing="6" IsVisible="{Binding IsWorking}">
+                    <ProgressBar IsIndeterminate="True" Height="4" />
+                    <TextBlock Text="{Binding WorkMessage}"
+                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                               Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                </StackPanel>
+
+                <!-- 收尾动作失败 -->
+                <Border IsVisible="{Binding HasActionError}"
+                        CornerRadius="6"
+                        Padding="10"
+                        Background="{arc:ArcDesignTokenResource SurfaceMuted}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <lucide:LucideIcon Kind="TriangleAlert" Size="15" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ActionError}"
+                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 两个动作按钮 -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
+                    <arc:Button Grid.Column="0"
+                                Variant="Secondary"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Command="{Binding WipeDataAndBootCommand}"
+                                IsEnabled="{Binding !IsWorking}"
+                                ToolTip.Tip="擦除用户数据后重启到系统（解锁后建议执行）">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <lucide:LucideIcon Kind="Trash2" Size="15" />
+                            <TextBlock Text="清空数据并开机" />
+                        </StackPanel>
+                    </arc:Button>
+
+                    <arc:Button Grid.Column="1"
+                                Variant="Primary"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Command="{Binding BootCommand}"
+                                IsEnabled="{Binding !IsWorking}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <lucide:LucideIcon Kind="Power" Size="15" />
+                            <TextBlock Text="直接开机" />
+                        </StackPanel>
+                    </arc:Button>
+                </Grid>
+
+                <!-- 关闭 -->
+                <arc:Button Variant="Text"
+                            HorizontalAlignment="Center"
+                            Command="{Binding CloseCommand}"
+                            IsEnabled="{Binding !IsWorking}">
+                    <TextBlock Text="关闭"
+                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                               Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                </arc:Button>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
