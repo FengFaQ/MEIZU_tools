@@ -139,31 +139,6 @@
                         </StackPanel>
                     </arc:Card>
 
-                    <!-- 恢复 QCN -->
-                    <arc:Card Title="恢复 QCN"
-                              Description="把 .qcn 写回设备，需要 DIAG 模式。">
-                        <StackPanel Spacing="8" Margin="0,6,0,0">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                <arc:Input IsLabelVisible="False" Grid.Column="0"
-                                           Text="{Binding QcnFilePath}"
-                                           Placeholder="选择 .qcn 备份文件"
-                                           Height="32" />
-                                <arc:Button Grid.Column="1" Variant="Secondary" Click="OnPickQcnFile">
-                                    <lucide:LucideIcon Kind="FolderOpen" Size="13" />
-                                </arc:Button>
-                            </Grid>
-
-                            <arc:Button Variant="Danger" HorizontalAlignment="Stretch"
-                                        HorizontalContentAlignment="Center"
-                                        Command="{Binding RestoreQcnCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <lucide:LucideIcon Kind="Upload" Size="13" />
-                                    <TextBlock Text="写入 QCN" />
-                                </StackPanel>
-                            </arc:Button>
-                        </StackPanel>
-                    </arc:Card>
-
                 </StackPanel>
             </ScrollViewer>
 
@@ -264,6 +239,31 @@
                                     </StackPanel>
                                 </ScrollViewer>
                             </Border>
+                        </StackPanel>
+                    </arc:Card>
+
+                    <!-- 恢复 QCN -->
+                    <arc:Card Title="恢复 QCN"
+                              Description="把 .qcn 写回设备，需要 DIAG 模式。">
+                        <StackPanel Spacing="8" Margin="0,6,0,0">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <arc:Input IsLabelVisible="False" Grid.Column="0"
+                                           Text="{Binding QcnFilePath}"
+                                           Placeholder="选择 .qcn 备份文件"
+                                           Height="32" />
+                                <arc:Button Grid.Column="1" Variant="Secondary" Click="OnPickQcnFile">
+                                    <lucide:LucideIcon Kind="FolderOpen" Size="13" />
+                                </arc:Button>
+                            </Grid>
+
+                            <arc:Button Variant="Danger" HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding RestoreQcnCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <lucide:LucideIcon Kind="Upload" Size="13" />
+                                    <TextBlock Text="写入 QCN" />
+                                </StackPanel>
+                            </arc:Button>
                         </StackPanel>
                     </arc:Card>
 

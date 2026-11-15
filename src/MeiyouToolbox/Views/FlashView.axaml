@@ -232,9 +232,10 @@
                                                FontSize="{arc:ArcDesignTokenResource TypeXS}"
                                                Foreground="{arc:ArcDesignTokenResource TextSecondary}" />
                                     <arc:Input IsLabelVisible="False" Grid.Column="1"
-                                               Placeholder="留空按文件名推断"
+                                               Placeholder="留空则推断"
                                                Text="{Binding PartitionName}"
                                                Height="30"
+                                               MinWidth="0"
                                                FontSize="{arc:ArcDesignTokenResource TypeXS}" />
                                     <Border Grid.Column="2" Padding="7,3" CornerRadius="5"
                                             VerticalAlignment="Center"
