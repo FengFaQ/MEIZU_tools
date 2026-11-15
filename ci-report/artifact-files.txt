@@ -30,9 +30,9 @@ libSkiaSharp.dll	11628896
 libSkiaSharp.pdb	84033536
 Markdig.dll	501760
 MeiyouToolbox.deps.json	27797
-MeiyouToolbox.dll	426496
+MeiyouToolbox.dll	525312
 MeiyouToolbox.exe	162816
-MeiyouToolbox.pdb	131884
+MeiyouToolbox.pdb	157804
 MeiyouToolbox.runtimeconfig.json	487
 MicroCom.Runtime.dll	15360
 Microsoft.Extensions.DependencyInjection.Abstractions.dll	66312
