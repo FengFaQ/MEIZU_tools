@@ -43,6 +43,11 @@
             需要在运行时动态决定、或通过绑定/数据模板选中的图标必须在此显式声明，
             否则不会打包，运行时不显示（且不报错，只在日志留 warning）。
         -->
-        <LucideIcon Include="Activity;FolderOpen;HardDriveDownload;LayoutDashboard;Minus;MonitorCog;PanelLeft;RefreshCw;Settings;Smartphone;Square;Terminal;Wrench;X;Zap" />
+        <LucideIcon Include="Activity;Cable;CircleCheck;CircleX;Cpu;Download;FileArchive;FolderOpen;HardDrive;HardDriveDownload;Info;Key;LayoutDashboard;Loader;Lock;Minus;MonitorCog;Package;PanelLeft;Play;RefreshCw;Settings;ShieldCheck;Smartphone;Square;Terminal;TriangleAlert;Unlock;Upload;Usb;Wand2;Wrench;X;Zap" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- 机型表：运行时由 DeviceProfileCatalog 读取，必须随程序打包 -->
+        <AvaloniaResource Include="Assets\devices.csv" />
     </ItemGroup>
 </Project>

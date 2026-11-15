@@ -134,13 +134,7 @@
             </Border>
 
             <Border IsVisible="{Binding IsFlash}">
-                <views:PlaceholderView>
-                    <views:PlaceholderView.DataContext>
-                        <vm:PlaceholderViewModel Title="刷机"
-                                                 Description="解锁 / 上锁 BL、Magisk Root、刷入 Recovery、9008 线刷完整包与任意分区写入。"
-                                                 IconKind="Zap" />
-                    </views:PlaceholderView.DataContext>
-                </views:PlaceholderView>
+                <views:FlashView DataContext="{Binding Flash}" />
             </Border>
 
             <Border IsVisible="{Binding IsBackup}">

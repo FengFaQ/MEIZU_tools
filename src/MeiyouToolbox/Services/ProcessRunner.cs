@@ -14,7 +14,7 @@ public sealed record ProcessResult(int ExitCode, string StandardOutput, string S
 }
 
 /// <summary>
-/// 运行外部可执行文件（adb / fastboot / 系统程序）。统一处理超时、取消与编码。
+/// 运行外部可执行文件（adb / fastboot / 9008 工具）。统一处理超时、取消与编码。
 /// 参考实现里 26 个工具都是这样被调用的，但原版没有超时控制，这里补上。
 /// </summary>
 public interface IProcessRunner
@@ -25,13 +25,34 @@ public interface IProcessRunner
         string? workingDirectory = null,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 流式执行：每产出一行就回调 <paramref name="onLine"/>。
+    /// 刷写 / 备份这类几分钟的长任务必须用它，否则用户面对的是一个不动的界面。
+    /// </summary>
+    Task<ProcessResult> RunStreamingAsync(
+        string fileName,
+        IEnumerable<string> arguments,
+        Action<string>? onLine,
+        string? workingDirectory = null,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class ProcessRunner : IProcessRunner
 {
-    public async Task<ProcessResult> RunAsync(
+    public Task<ProcessResult> RunAsync(
         string fileName,
         IEnumerable<string> arguments,
+        string? workingDirectory = null,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default) =>
+        RunStreamingAsync(fileName, arguments, null, workingDirectory, timeout, cancellationToken);
+
+    public async Task<ProcessResult> RunStreamingAsync(
+        string fileName,
+        IEnumerable<string> arguments,
+        Action<string>? onLine,
         string? workingDirectory = null,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
@@ -57,16 +78,54 @@ public sealed class ProcessRunner : IProcessRunner
             psi.WorkingDirectory = workingDirectory;
         }
 
+        var stdout = new StringBuilder();
+        var stderr = new StringBuilder();
+
         try
         {
             using var process = new Process { StartInfo = psi };
+
+            if (onLine is not null)
+            {
+                process.OutputDataReceived += (_, e) =>
+                {
+                    if (e.Data is null)
+                    {
+                        return;
+                    }
+
+                    stdout.AppendLine(e.Data);
+                    onLine(e.Data);
+                };
+                process.ErrorDataReceived += (_, e) =>
+                {
+                    if (e.Data is null)
+                    {
+                        return;
+                    }
+
+                    stderr.AppendLine(e.Data);
+                    onLine(e.Data);
+                };
+            }
+
             if (!process.Start())
             {
                 return new ProcessResult(-1, string.Empty, $"无法启动 {fileName}");
             }
 
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            if (onLine is not null)
+            {
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+            }
+
+            Task<string> stdoutTask = onLine is null
+                ? process.StandardOutput.ReadToEndAsync(cancellationToken)
+                : Task.FromResult(string.Empty);
+            Task<string> stderrTask = onLine is null
+                ? process.StandardError.ReadToEndAsync(cancellationToken)
+                : Task.FromResult(string.Empty);
 
             using var timeoutCts = timeout is { } t
                 ? new CancellationTokenSource(t)
@@ -82,16 +141,22 @@ public sealed class ProcessRunner : IProcessRunner
             {
                 TryKill(process);
                 var reason = timeoutCts.IsCancellationRequested ? "命令超时" : "命令已取消";
-                return new ProcessResult(-1, string.Empty, $"{reason}: {fileName}");
+                return new ProcessResult(-1, stdout.ToString(), $"{reason}: {fileName}");
             }
 
-            var stdout = await stdoutTask.ConfigureAwait(false);
-            var stderr = await stderrTask.ConfigureAwait(false);
-            return new ProcessResult(process.ExitCode, stdout, stderr);
+            if (onLine is null)
+            {
+                return new ProcessResult(
+                    process.ExitCode,
+                    await stdoutTask.ConfigureAwait(false),
+                    await stderrTask.ConfigureAwait(false));
+            }
+
+            return new ProcessResult(process.ExitCode, stdout.ToString(), stderr.ToString());
         }
         catch (Exception ex)
         {
-            return new ProcessResult(-1, string.Empty, ex.Message);
+            return new ProcessResult(-1, stdout.ToString(), ex.Message);
         }
     }
 

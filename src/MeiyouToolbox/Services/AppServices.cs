@@ -30,9 +30,24 @@ public static class AppServices
         services.AddSingleton<IDeviceService, DeviceService>();
         services.AddSingleton<IScreenshotService, ScreenshotService>();
 
+        // 机型表：内部要从工具目录找 devices.csv，所以延迟到容器里构造
+        services.AddSingleton<IDeviceProfileCatalog>(sp =>
+        {
+            var tools = sp.GetRequiredService<IToolLocator>();
+            var logger = sp.GetRequiredService<IAppLogger>();
+            return new DeviceProfileCatalog(tools, logger);
+        });
+
+        // 刷机相关
+        services.AddSingleton<ICredentialStore, CredentialStore>();
+        services.AddSingleton<IFirehoseService, FirehoseService>();
+        services.AddSingleton<IPartitionTableService, PartitionTableService>();
+        services.AddSingleton<IFlashService, FlashService>();
+
         // 视图模型
         services.AddSingleton<OverviewViewModel>();
         services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<FlashViewModel>();
         services.AddSingleton<MainViewModel>();
 
         return services.BuildServiceProvider();

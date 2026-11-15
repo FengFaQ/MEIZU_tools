@@ -22,11 +22,13 @@ public sealed partial class MainViewModel : ObservableObject
 
     public MainViewModel(
         OverviewViewModel overview,
+        FlashViewModel flash,
         SettingsViewModel settings,
         IScreenshotService screenshots,
         IAppLogger logger)
     {
         Overview = overview;
+        Flash = flash;
         Settings = settings;
         _screenshots = screenshots;
         _logger = logger;
@@ -38,10 +40,13 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         Overview = null!;
+        Flash = null!;
         Settings = null!;
     }
 
     public OverviewViewModel Overview { get; }
+
+    public FlashViewModel Flash { get; }
 
     public SettingsViewModel Settings { get; }
 

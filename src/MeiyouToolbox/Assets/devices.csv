@@ -1,0 +1,28 @@
+product,model,cpu,storagetype,blplan,parlayout,bootpar,edlplan
+M15,魅族 15（M15）,骁龙 626,emmc,auth-private,aonly,boot,key
+16S,魅族 16S,骁龙 855,ufs,auth-private,aonly,boot,key
+16Spro,魅族 16S Pro,骁龙 855+,ufs,auth-private,aonly,boot,key
+16T,魅族 16T,骁龙 855,ufs,odm-1,aonly,boot,key
+16th,魅族 16th,骁龙 845,ufs,auth-private,aonly,boot,cmd
+16thPlus,魅族 16th Plus,骁龙 845,ufs,auth-private,aonly,boot,cmd
+16X,魅族 16X,骁龙 710,emmc,auth-private,aonly,boot,cmd
+16Xs,魅族 16XS,骁龙 675,emmc,odm-1,aonly,boot,key
+meizu17,魅族 17,骁龙 865,ufs,auth-private,aonly,boot,cmd
+meizu17Pro,魅族 17 Pro,骁龙 865,ufs,auth-private,aonly,boot,cmd
+meizu18,魅族 18,骁龙 888,ufs,auth-private,ab,boot,cmd
+meizu18Pro,魅族 18 Pro,骁龙 888,ufs,auth-private,ab,boot,cmd
+meizu18s,魅族 18s,骁龙 888+,ufs,auth-private,ab,boot,cmd
+meizu18sPro,魅族 18s Pro,骁龙 888+,ufs,auth-private,ab,boot,cmd
+meizu18X,魅族 18X,骁龙 870,ufs,odm-1,ab_rec,boot,cmd
+meizu20,魅族 20 / 20C,骁龙 8 Gen 2,ufs,auth-private,ab_rec,init_boot,edlcable
+meizu20inf,魅族 20 无界版（不支持 9008）,骁龙 8 Gen 2,ufs,auth-private,ab_rec,init_boot,key
+meizu20Pro,魅族 20 Pro,骁龙 8 Gen 2,ufs,auth-private,ab_rec,init_boot,edlcable
+meizu21,魅族 21,骁龙 8 Gen 3,ufs,auth-private,ab_rec,init_boot,edlcable
+meizu21Pro,魅族 21 Pro,骁龙 8 Gen 3,ufs,auth-private,ab_rec,init_boot,edlcable
+Meizu21Note,魅族 21 Note,骁龙 8 Gen 2,ufs,auth-private,ab_rec,init_boot,edlcable
+meizu22,魅族 22,骁龙 8s Gen 4,ufs,auth-mzkv-sig,ab_rec,init_boot,edlcable
+note8,魅族 Note8,骁龙 632,emmc,odm-note8,aonly,boot,key
+note9,魅族 Note9,骁龙 675,emmc,odm-1,aonly,boot,key
+note16pro,魅族 Note16 Pro,骁龙 7s Gen 3,ufs,auth-mzkv-nosig,ab_rec,init_boot,edlcable
+pro7,魅族 PRO 7,联发科 Helio P25,emmc,odm-1,aonly,boot,key
+MeizuVenus,魅族 Lucky08,骁龙 7s Gen 2,ufs,odm-1,ab_rec,boot,cmd
