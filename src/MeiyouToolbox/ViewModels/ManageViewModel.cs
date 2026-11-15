@@ -74,10 +74,9 @@ public sealed partial class ManageViewModel : ObservableObject
         LogLines = [];
         FileSystems =
         [
-            new(FileSystemKind.Fat32, "FAT32"),
-            new(FileSystemKind.Ext4, "EXT4"),
-            new(FileSystemKind.ExFat, "exFAT"),
-            new(FileSystemKind.Ntfs, "NTFS"),
+            new(FileSystemKind.Default, "恢复默认（推荐）"),
+            new(FileSystemKind.F2fs, "f2fs"),
+            new(FileSystemKind.Ext4, "ext4"),
         ];
         _selectedFileSystem = FileSystems[0];
         Slot = SlotInfo.Unknown(ConnectionMode.None);
@@ -109,6 +108,7 @@ public sealed partial class ManageViewModel : ObservableObject
         nameof(ConnectionText),
         nameof(IsEdlConnected),
         nameof(IsAdbMode),
+        nameof(IsFastbootMode),
         nameof(CanReadPartitions),
         nameof(CanSwitchSlot),
         nameof(CanErase),
@@ -125,7 +125,18 @@ public sealed partial class ManageViewModel : ObservableObject
 
     public bool IsEdlConnected => Connection == ConnectionMode.QcEdl;
 
-    /// <summary>格式化走 adb shell 里的 mkfs 工具，只有系统 / Recovery 模式能用。</summary>
+    /// <summary>
+    /// 格式化走 <c>fastboot format</c>，只有 Fastboot / FastbootD 能用。
+    /// <para>
+    /// 不再走 adb 推 mkfs：安卓只认 ext4 / f2fs，而 <c>fastboot format</c> 是在
+    /// 主机端用 mke2fs.exe / make_f2fs.exe 生成镜像再整块刷下去，绕开了
+    /// "设备上没有 mkfs 二进制"和"开机态无法格式化正在使用的分区"两个死路。
+    /// </para>
+    /// </summary>
+    public bool IsFastbootMode =>
+        Connection is ConnectionMode.Fastboot or ConnectionMode.FastbootD;
+
+    /// <summary>为了兼容旧绑定保留。</summary>
     public bool IsAdbMode => Connection is ConnectionMode.System or ConnectionMode.Recovery;
 
     public string ConnectionText => Connection.Display();
@@ -138,7 +149,7 @@ public sealed partial class ManageViewModel : ObservableObject
         !IsBusy && DangerConfirmed && IsEdlConnected && SelectedPartition is not null;
 
     public bool CanFormat =>
-        !IsBusy && DangerConfirmed && IsAdbMode && SelectedPartition is not null;
+        !IsBusy && DangerConfirmed && IsFastbootMode && SelectedPartition is not null;
 
     public ObservableCollection<DeviceProfile> Profiles { get; } = [];
 
@@ -229,10 +240,12 @@ public sealed partial class ManageViewModel : ObservableObject
     public ObservableCollection<FileSystemOption> FileSystems { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedFileSystemDescription))]
     private FileSystemOption? _selectedFileSystem;
 
-    [ObservableProperty]
-    private string? _volumeLabel;
+    /// <summary>当前选中文件系统的一句话说明，直接显示在界面上。</summary>
+    public string SelectedFileSystemDescription =>
+        SelectedFileSystem?.Kind.Description() ?? string.Empty;
 
     /// <summary>擦除 / 格式化的二次确认。危险操作必须打勾。</summary>
     [ObservableProperty]
@@ -390,7 +403,7 @@ public sealed partial class ManageViewModel : ObservableObject
         await RunAsync($"格式化 {partition.Name} 为 {fs.Title}", async ct =>
         {
             var result = await _clean.FormatPartitionAsync(
-                partition.Name, fs.Kind, VolumeLabel, CreateProgress(), ct).ConfigureAwait(true);
+                partition.Name, fs.Kind, label: null, CreateProgress(), ct).ConfigureAwait(true);
 
             if (result.Success)
             {

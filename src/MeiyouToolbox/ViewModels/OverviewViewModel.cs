@@ -30,16 +30,77 @@ public sealed partial class OverviewViewModel : ObservableObject
     private readonly IDeviceService _devices;
     private readonly IHostInfoService _host;
     private readonly IShellLauncher _shell;
+    private readonly IAppLogger _logger;
 
-    public OverviewViewModel(IDeviceService devices, IHostInfoService host, IShellLauncher shell)
+    public OverviewViewModel(
+        IDeviceService devices, IHostInfoService host, IShellLauncher shell, IAppLogger logger)
     {
         _devices = devices;
         _host = host;
         _shell = shell;
+        _logger = logger;
 
         // 先把 14 行占位（全部 "---"）建好，界面首帧就有完整结构。
         RebuildFieldRows(DeviceInfo.Disconnected);
         RefreshHost();
+
+        // 把启动以来已有的日志补进列表，之后靠事件实时追加。
+        foreach (var line in _logger.Snapshot())
+        {
+            LogLines.Add(line);
+        }
+
+        TrimLogLines();
+        _logger.LineWritten += OnLogLineWritten;
+    }
+
+    // ---------------- 运行日志 ----------------
+
+    /// <summary>右侧日志栏：软件运行日志 + 刷写 / 备份等操作记录。</summary>
+    public ObservableCollection<string> LogLines { get; } = [];
+
+    /// <summary>日志保留行数。概览页只是"看个大概"，完整日志在 logs\ 目录里。</summary>
+    private const int MaxLogLines = 400;
+
+    [ObservableProperty]
+    private bool _isLogAutoScroll = true;
+
+    public bool HasLog => LogLines.Count > 0;
+
+    /// <summary>
+    /// <see cref="IAppLogger.LineWritten"/> 回调。<b>可能在任意线程</b>，必须切回 UI 线程再改集合。
+    /// </summary>
+    private void OnLogLineWritten(string line)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnLogLineWritten(line));
+            return;
+        }
+
+        LogLines.Add(line);
+        TrimLogLines();
+    }
+
+    private void TrimLogLines()
+    {
+        while (LogLines.Count > MaxLogLines)
+        {
+            LogLines.RemoveAt(0);
+        }
+
+        OnPropertyChanged(nameof(HasLog));
+        LogScrollRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>视图订阅它把日志列表滚到底部（VM 不引用控件）。</summary>
+    public event EventHandler? LogScrollRequested;
+
+    [RelayCommand]
+    private void ClearLog()
+    {
+        LogLines.Clear();
+        OnPropertyChanged(nameof(HasLog));
     }
 
     // ---------------- 手机状态 ----------------

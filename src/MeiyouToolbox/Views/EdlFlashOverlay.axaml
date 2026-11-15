@@ -245,11 +245,10 @@
                             </arc:Button>
 
                             <arc:Button Grid.Column="1" Variant="Secondary"
-                                        Command="{Binding RebootToCommand}"
-                                        CommandParameter="system">
+                                        Command="{Binding OpenRebootPickerCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <lucide:LucideIcon Kind="Power" Size="14" />
-                                    <TextBlock Text="重启到系统" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    <TextBlock Text="重启" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
                                 </StackPanel>
                             </arc:Button>
                         </Grid>
@@ -282,8 +281,7 @@
                                                   IsChecked="{Binding ProtectData}"
                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}" />
                                     <arc:Button Grid.Column="1" Variant="Ghost"
-                                                Command="{Binding RebootToCommand}"
-                                                CommandParameter="qcedl">
+                                                Command="{Binding OpenRebootPickerCommand}">
                                         <TextBlock Text="重启到 9008" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
                                     </arc:Button>
                                 </Grid>
@@ -341,5 +339,55 @@
                 </Grid>
             </Grid>
         </Border>
+
+        <!-- 重启目标选择：点「重启」后盖在整页之上，四选一 -->
+        <Grid IsVisible="{Binding IsRebootPickerOpen}" Background="#66000000">
+            <Border Width="360" CornerRadius="12" Padding="20"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{arc:ArcDesignTokenResource Surface}"
+                    BorderBrush="{arc:ArcDesignTokenResource Border}"
+                    BorderThickness="1"
+                    BoxShadow="0 8 32 0 #33000000">
+                <StackPanel Spacing="10">
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                            <lucide:LucideIcon Kind="Power" Size="16" />
+                            <TextBlock Text="重启到哪"
+                                       FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                        </StackPanel>
+                        <arc:Button Grid.Column="1" Variant="Ghost"
+                                    Command="{Binding CloseRebootPickerCommand}">
+                            <lucide:LucideIcon Kind="X" Size="14" />
+                        </arc:Button>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding RebootTargets}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RebootTarget">
+                                <arc:Button Variant="Secondary"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Left"
+                                            Margin="0,2"
+                                            Command="{Binding $parent[ItemsControl].((vm:EdlFlashViewModel)DataContext).PickRebootTargetCommand}"
+                                            CommandParameter="{Binding Value}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontSize="{arc:ArcDesignTokenResource TypeSM}"
+                                                   Foreground="{arc:ArcDesignTokenResource Foreground}" />
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                   Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                    </StackPanel>
+                                </arc:Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

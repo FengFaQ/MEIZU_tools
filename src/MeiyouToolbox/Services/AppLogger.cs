@@ -13,6 +13,12 @@ public interface IAppLogger
     void Error(string message, Exception? exception = null);
     string LogDirectory { get; }
     string? CurrentLogFile { get; }
+
+    /// <summary>每写入一行就触发一次（可能在任意线程），概览页用它做实时日志。</summary>
+    event Action<string>? LineWritten;
+
+    /// <summary>取内存里保留的近期日志（最多 5000 行）。</summary>
+    IReadOnlyList<string> Snapshot();
 }
 
 public sealed class AppLogger : IAppLogger
@@ -42,6 +48,9 @@ public sealed class AppLogger : IAppLogger
 
     public string? CurrentLogFile { get; }
 
+    /// <summary>每写入一行就触发一次。可能在任意线程，订阅方自行切回 UI 线程。</summary>
+    public event Action<string>? LineWritten;
+
     public void Info(string message) => Write("INFO ", message);
 
     public void Warn(string message) => Write("WARN ", message);
@@ -61,19 +70,27 @@ public sealed class AppLogger : IAppLogger
                 _buffer.RemoveRange(0, 1000);
             }
 
-            if (CurrentLogFile is null)
+            if (CurrentLogFile is not null)
             {
-                return;
+                try
+                {
+                    File.AppendAllText(CurrentLogFile, line + Environment.NewLine, Encoding.UTF8);
+                }
+                catch
+                {
+                    // 日志写失败不能影响主流程
+                }
             }
+        }
 
-            try
-            {
-                File.AppendAllText(CurrentLogFile, line + Environment.NewLine, Encoding.UTF8);
-            }
-            catch
-            {
-                // 日志写失败不能影响主流程
-            }
+        // 在锁外通知订阅方：回调里可能又调用 Snapshot()，避免重入复杂化。
+        try
+        {
+            LineWritten?.Invoke(line);
+        }
+        catch
+        {
+            // 订阅方异常不能影响日志本身
         }
     }
 

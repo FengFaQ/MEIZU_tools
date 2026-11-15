@@ -59,6 +59,9 @@ public static class AppServices
         services.AddSingleton<IDeviceModeService, DeviceModeService>();
         services.AddSingleton<IPostTaskService, PostTaskService>();
 
+        // 解锁计划：把"哪个机型该进哪种模式、分几个阶段"从界面里抽出来
+        services.AddSingleton<IUnlockPlanner, UnlockPlanner>();
+
         // 视图模型
         services.AddSingleton<TaskCompleteViewModel>();
         services.AddSingleton<EdlFlashViewModel>();

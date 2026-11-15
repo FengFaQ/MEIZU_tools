@@ -572,8 +572,16 @@ public sealed class FlashService : IFlashService
     }
 
     /// <summary>
-    /// auth-private：有授权码走 9008 写 private 分区，否则降级 fastboot 分段解锁码。
-    /// 参考实现 <c>煤油工具箱.bat:L753-L856</c>。
+    /// auth-private：**分阶段**执行，阶段由调用方按 <see cref="IUnlockPlanner"/> 给出的计划逐步驱动。
+    /// <para>
+    /// 这是参考实现 <c>煤油工具箱.bat:L753-L856</c> 的真实结构：
+    /// </para>
+    /// <list type="bullet">
+    /// <item>有授权码 → 只有 9008 一个阶段（<c>L774</c> 直接跳 <c>-EDL</c>）；</item>
+    /// <item>无授权码 → 先 Fastboot 写解锁码（<c>L785-L800</c>），再进 9008 写 private（<c>L819-L856</c>）；</item>
+    /// <item><c>meizu20inf</c> → 只有 Fastboot 一个阶段（<c>L757</c> 强制 forcefb）。</item>
+    /// </list>
+    /// 阶段之间不中止设备状态，由上层重新 EnsureMode 到下一阶段需要的状态。
     /// </summary>
     private async Task<FlashResult> UnlockPrivateAsync(
         DeviceProfile profile,
@@ -584,25 +592,109 @@ public sealed class FlashService : IFlashService
         IProgress<FlashProgress>? progress,
         CancellationToken cancellationToken)
     {
-        var hasAuthCode = credentials.HasAuthCode;
-
-        // 20 无界版没有可用的 9008，强制走 fastboot。
         var forceFastboot = profile.Product.Equals("meizu20inf", StringComparison.OrdinalIgnoreCase);
 
-        if (hasAuthCode && !forceFastboot)
+        // 当前在 9008：写 private 分区，这一步就是流程的终点。
+        if (mode == ConnectionMode.QcEdl)
         {
+            if (!credentials.HasUnlockCode)
+            {
+                return FlashResult.Fail(
+                    "9008 阶段需要 512 字符解锁码写入 private 分区，请先导入解锁码。");
+            }
+
             return await UnlockPrivateViaEdlAsync(
-                profile, credentials, port, memory, progress, cancellationToken).ConfigureAwait(false);
+                profile, credentials, port, memory, forceFastboot, progress, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        if (!credentials.HasUnlockCode)
+        // 当前在 Fastboot：写解锁码（512 字符切 16 段）。
+        if (mode is ConnectionMode.Fastboot or ConnectionMode.FastbootD)
         {
-            return FlashResult.Fail(
-                "尚未导入解锁码。请先在「导入授权资料」里导入 512 字符的解锁码。");
+            if (!credentials.HasUnlockCode)
+            {
+                return FlashResult.Fail(
+                    "尚未导入解锁码。auth-private 机型解锁必须有 512 字符解锁码。");
+            }
+
+            var result = await UnlockPrivateViaFastbootAsync(
+                credentials.UnlockCode!, progress, cancellationToken).ConfigureAwait(false);
+
+            if (!result.Success)
+            {
+                return result;
+            }
+
+            // 只在"没有后续 9008 阶段"的机型上收尾：清数据并开机。
+            // 有 9008 阶段的机型，清数据放在 9008 阶段最后做（照抄参考实现 L805-L809 / L852-L855）。
+            if (forceFastboot)
+            {
+                return await FinishAfterUnlockAsync(
+                    ConnectionMode.Fastboot, forceFastboot, port, memory, progress, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return FlashResult.Ok($"{result.Message}；下一步将进入 9008 写 private 分区");
         }
 
-        return await UnlockPrivateViaFastbootAsync(
-            credentials.UnlockCode!, progress, cancellationToken).ConfigureAwait(false);
+        return FlashResult.Fail(
+            $"auth-private 解锁不支持在 {mode.Display()} 状态下执行，需要 Fastboot 或 9008");
+    }
+
+    /// <summary>
+    /// 解锁收尾：写 misc_wipedata（清数据标记）然后重启到系统。
+    /// 参考实现 <c>L806-L809</c>（Fastboot 版）与 <c>L852-L855</c>（9008 版）。
+    /// </summary>
+    private async Task<FlashResult> FinishAfterUnlockAsync(
+        ConnectionMode mode,
+        bool fromFastboot,
+        string? port,
+        StorageKind memory,
+        IProgress<FlashProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        var misc = Path.Combine(_tools.AndroidToolsDirectory, "misc_wipedata.img");
+        if (!File.Exists(misc))
+        {
+            _logger.Warn($"找不到清数据标记镜像：{misc}，跳过清数据");
+
+            if (mode == ConnectionMode.QcEdl)
+            {
+                await RebootAsync(ConnectionMode.QcEdl, "system", port, memory, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                await RebootAsync(mode, "system", port, memory, cancellationToken).ConfigureAwait(false);
+            }
+
+            return FlashResult.Ok("解锁完成（未找到清数据标记，设备不会自动清数据）");
+        }
+
+        if (mode == ConnectionMode.QcEdl)
+        {
+            progress?.Report(new FlashProgress("正在写入清数据标记…"));
+            var resolvedPort = await ResolvePortAsync(port, cancellationToken).ConfigureAwait(false);
+            if (resolvedPort is not null)
+            {
+                await FlashViaEdlAsync("misc", misc, resolvedPort, memory, progress, cancellationToken)
+                    .ConfigureAwait(false);
+
+                progress?.Report(new FlashProgress("正在重启到系统…"));
+                await RebootAsync(ConnectionMode.QcEdl, "system", resolvedPort, memory, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            progress?.Report(new FlashProgress("正在写入清数据标记…"));
+            await FlashViaFastbootAsync("misc", misc, progress, cancellationToken).ConfigureAwait(false);
+
+            progress?.Report(new FlashProgress("正在重启到系统…"));
+            await RebootAsync(mode, "system", port, memory, cancellationToken).ConfigureAwait(false);
+        }
+
+        return FlashResult.Ok("解锁完成，设备正在清数据并开机");
     }
 
     /// <summary>
@@ -613,6 +705,7 @@ public sealed class FlashService : IFlashService
         DeviceCredentials credentials,
         string? port,
         StorageKind memory,
+        bool forceFastboot,
         IProgress<FlashProgress>? progress,
         CancellationToken cancellationToken)
     {
@@ -664,10 +757,15 @@ public sealed class FlashService : IFlashService
             return writeResult;
         }
 
-        await RebootAsync(ConnectionMode.QcEdl, "system", resolvedPort, memory, cancellationToken)
-            .ConfigureAwait(false);
+        // 参考实现在这里 reboot qcedl qcedl → 重发引导 → mzbox edlreadinfo 校验 unlocked。
+        // 我们没有 edlreadinfo 的等价实现（它读的是厂商的 edl 侧信息），
+        // 所以跳过"重启后回读校验"这一环，直接写清数据标记并开机；
+        // 解锁是否生效由用户在系统里自行确认。
+        progress?.Report(new FlashProgress("private 分区已写入，正在写清数据标记…"));
 
-        return FlashResult.Ok("已写入解锁标记，设备重启后 BL 应处于解锁状态");
+        return await FinishAfterUnlockAsync(
+            ConnectionMode.QcEdl, forceFastboot, resolvedPort, memory, progress, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>

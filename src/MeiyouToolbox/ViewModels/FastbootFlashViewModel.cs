@@ -46,6 +46,9 @@ public sealed partial class FastbootImageRow : ObservableObject
     private bool _isSelected = true;
 }
 
+/// <summary>A/B 槽位的一个可选值。</summary>
+public sealed record FastbootSlotChoice(string Value, string Title, string Description);
+
 /// <summary>
 /// Fastboot 刷写页的视图模型。
 /// <para>
@@ -61,6 +64,7 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
     private readonly IDeviceService _devices;
     private readonly IDeviceModeService _modes;
     private readonly IToolLocator _tools;
+    private readonly IProcessRunner _runner;
     private readonly IAppLogger _logger;
 
     private CancellationTokenSource? _cts;
@@ -71,6 +75,7 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
         IDeviceService devices,
         IDeviceModeService modes,
         IToolLocator tools,
+        IProcessRunner runner,
         IAppLogger logger)
     {
         _payload = payload;
@@ -78,6 +83,7 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
         _devices = devices;
         _modes = modes;
         _tools = tools;
+        _runner = runner;
         _logger = logger;
         AutoReboot = true;
         VerifySize = true;
@@ -91,6 +97,7 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
         _devices = null!;
         _modes = null!;
         _tools = null!;
+        _runner = null!;
         _logger = null!;
     }
 
@@ -322,6 +329,50 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
 
     private bool CanLoad() => !IsBusy && HasSource;
 
+    /// <summary>全选：镜像动辄二十多个，逐个点不现实。</summary>
+    [RelayCommand(CanExecute = nameof(CanSelect))]
+    private void SelectAll()
+    {
+        foreach (var image in Images)
+        {
+            image.IsSelected = true;
+        }
+
+        UpdateSelectionStatus();
+    }
+
+    /// <summary>全不选。</summary>
+    [RelayCommand(CanExecute = nameof(CanSelect))]
+    private void SelectNone()
+    {
+        foreach (var image in Images)
+        {
+            image.IsSelected = false;
+        }
+
+        UpdateSelectionStatus();
+    }
+
+    private bool CanSelect() => Images.Count > 0;
+
+    /// <summary>勾选数变化后刷新状态文字（"已选 12 / 27"）与刷写按钮可用性。</summary>
+    private void UpdateSelectionStatus()
+    {
+        var total = Images.Count;
+        var selected = Images.Count(i => i.IsSelected);
+
+        if (total == 0)
+        {
+            ImageStatus = string.Empty;
+        }
+        else
+        {
+            ImageStatus = $"已选 {selected} / {total} 个镜像";
+        }
+
+        FlashCommand.NotifyCanExecuteChanged();
+    }
+
     /// <summary>开始刷入列表里勾选的镜像。</summary>
     [RelayCommand(CanExecute = nameof(CanFlash))]
     private async Task FlashAsync()
@@ -416,6 +467,159 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(IsBusy))]
     private void Cancel() => _cts?.Cancel();
 
+    // ------------------------------------------------------------------
+    // 擦除选中分区（对应紫罗兰欧加线刷页的「擦除」能力）
+    // ------------------------------------------------------------------
+
+    private bool CanErase() => !IsBusy && Images.Any(i => i.IsSelected);
+
+    [RelayCommand(CanExecute = nameof(CanErase))]
+    private async Task EraseSelectedAsync()
+    {
+        var selected = Images.Where(i => i.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        var fastboot = _tools.FastbootPath;
+        if (fastboot is null)
+        {
+            Report("找不到 fastboot.exe，无法擦除分区");
+            return;
+        }
+
+        await RunAsync($"擦除 {selected.Count} 个分区", async ct =>
+        {
+            var failure = new List<string>();
+
+            foreach (var image in selected)
+            {
+                Report($"擦除 {image.Partition}");
+                var result = await _runner
+                    .RunAsync(fastboot, ["erase", image.Partition], cancellationToken: ct)
+                    .ConfigureAwait(true);
+
+                var text = result.Combined;
+                if (!result.Success || text.Contains("FAILED", StringComparison.OrdinalIgnoreCase))
+                {
+                    // fastboot 对不存在的分区报 "partition not found"，这不算致命错误。
+                    if (text.Contains("not found", StringComparison.OrdinalIgnoreCase)
+                        || text.Contains("No such partition", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Report($"跳过 {image.Partition}：设备上没有这个分区");
+                        continue;
+                    }
+
+                    failure.Add(image.Partition);
+                }
+            }
+
+            return failure.Count > 0
+                ? FlashResult.Fail($"擦除失败 {failure.Count} 个：{string.Join(", ", failure)}")
+                : FlashResult.Ok($"已擦除 {selected.Count} 个分区");
+        }).ConfigureAwait(true);
+    }
+
+    // ------------------------------------------------------------------
+    // 槽位（A/B 机型）
+    // ------------------------------------------------------------------
+
+    [ObservableProperty]
+    private string? _currentSlot;
+
+    [ObservableProperty]
+    private bool _isSlotPickerOpen;
+
+    public IReadOnlyList<FastbootSlotChoice> SlotChoices { get; } =
+    [
+        new("a", "槽位 A", "激活 A 槽并重启到系统"),
+        new("b", "槽位 B", "激活 B 槽并重启到系统"),
+    ];
+
+    public bool HasCurrentSlot => !string.IsNullOrWhiteSpace(CurrentSlot);
+
+    [RelayCommand]
+    private void OpenSlotPicker() => IsSlotPickerOpen = true;
+
+    [RelayCommand]
+    private void CloseSlotPicker() => IsSlotPickerOpen = false;
+
+    [RelayCommand]
+    private async Task ReadSlotAsync()
+    {
+        var fastboot = _tools.FastbootPath;
+        if (fastboot is null)
+        {
+            Report("找不到 fastboot.exe，无法读取槽位");
+            return;
+        }
+
+        try
+        {
+            // fastboot 把 getvar 的输出写到 stderr，必须用 Combined。
+            var result = await _runner.RunAsync(fastboot, ["getvar", "current-slot"]).ConfigureAwait(true);
+            var match = Regex.Match(result.Combined, @"current-slot\s*:\s*'?([ab])'?", RegexOptions.IgnoreCase);
+            Post(() =>
+            {
+                CurrentSlot = match.Success ? match.Groups[1].Value.ToUpperInvariant() : null;
+                OnPropertyChanged(nameof(HasCurrentSlot));
+            });
+            Report(match.Success ? $"当前槽位：{match.Groups[1].Value.ToUpperInvariant()}" : "设备没有 A/B 槽位");
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn($"读取槽位失败：{ex.Message}");
+            Report($"读取槽位失败：{ex.Message}", failed: true);
+        }
+    }
+
+    [RelayCommand]
+    private async Task SetActiveSlotAsync(string? slot)
+    {
+        IsSlotPickerOpen = false;
+        if (string.IsNullOrWhiteSpace(slot))
+        {
+            return;
+        }
+
+        var fastboot = _tools.FastbootPath;
+        if (fastboot is null)
+        {
+            Report("找不到 fastboot.exe，无法切换槽位");
+            return;
+        }
+
+        await RunAsync($"切换到槽位 {slot.ToUpperInvariant()}", async ct =>
+        {
+            var result = await _runner
+                .RunAsync(fastboot, ["set_active", slot], cancellationToken: ct)
+                .ConfigureAwait(true);
+
+            var text = result.Combined;
+            if (!result.Success || text.Contains("FAILED", StringComparison.OrdinalIgnoreCase))
+            {
+                return FlashResult.Fail(FirstLine(text, $"切换槽位失败"));
+            }
+
+            await ReadSlotAsync().ConfigureAwait(true);
+            return FlashResult.Ok($"已激活槽位 {slot.ToUpperInvariant()}，重启后生效");
+        }).ConfigureAwait(true);
+    }
+
+    private static string FirstLine(string text, string fallback)
+    {
+        foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (line.Length > 0)
+            {
+                return line;
+            }
+        }
+
+        return fallback;
+    }
+
     /// <summary>供视图在用户选完路径后调用：设路径并自动载入镜像。</summary>
     public void SetSource(string path)
     {
@@ -452,8 +656,9 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
                 ? "没有找到镜像"
                 : $"共 {rows.Count} 个镜像，已全部勾选";
             OnPropertyChanged(nameof(HasImages));
-            FlashCommand.NotifyCanExecuteChanged();
-        });
+            SelectAllCommand.NotifyCanExecuteChanged();
+            SelectNoneCommand.NotifyCanExecuteChanged();
+            FlashCommand.NotifyCanExecuteChanged();        });
     }
 
     /// <summary>

@@ -7,6 +7,9 @@ using MeiyouToolbox.Services;
 
 namespace MeiyouToolbox.ViewModels;
 
+/// <summary>重启目标的一项：值（传给 <c>reboot</c> 的模式名）、标题、一句说明。</summary>
+public sealed record RebootTarget(string Value, string Title, string Description);
+
 /// <summary>分区表里的一行。比备份页的行多两样：勾选状态与待写镜像路径。</summary>
 public sealed partial class EdlPartitionRow(GptPartition partition) : ObservableObject
 {
@@ -194,6 +197,50 @@ public sealed partial class EdlFlashViewModel : ObservableObject
     [ObservableProperty] private bool _sendGuidance;
     [ObservableProperty] private bool _protectBaseband;
     [ObservableProperty] private bool _protectData;
+
+    // ------------------------------------------------------------------
+    // 重启目标选择（点击「重启」先在窗口内问一下要重启到哪）
+    // ------------------------------------------------------------------
+
+    /// <summary>重启目标选择框是否展开。</summary>
+    [ObservableProperty]
+    private bool _isRebootPickerOpen;
+
+    /// <summary>
+    /// 可选的重启目标。参考实现 `煤油工具箱.bat:L511-L516` 的 `1.重启到Recovery 2.不重启`
+    /// 与 `reboot.bat` 的 from→to 支持矩阵：9008 下能去 system / recovery / fastbootd / qcedl。
+    /// <para>
+    /// `reboot qcedl fastboot` 在参考实现里不存在（9008 不能直接进 fastboot），
+    /// 只能经 misc 镜像中转，这里与其保持一致，不提供该项。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<RebootTarget> RebootTargets { get; } =
+    [
+        new("system", "系统", "正常开机进入系统"),
+        new("recovery", "Recovery", "进 Recovery / TWRP"),
+        new("fastbootd", "FastbootD", "进用户态 Fastboot（动态分区可用）"),
+        new("qcedl", "9008", "留在 9008，便于继续刷写"),
+    ];
+
+    [RelayCommand]
+    private void OpenRebootPicker() => IsRebootPickerOpen = true;
+
+    [RelayCommand]
+    private void CloseRebootPicker() => IsRebootPickerOpen = false;
+
+    /// <summary>选中并执行某一项重启目标。</summary>
+    [RelayCommand]
+    private async Task PickRebootTargetAsync(string? target)
+    {
+        IsRebootPickerOpen = false;
+
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return;
+        }
+
+        await RebootToAsync(target).ConfigureAwait(true);
+    }
 
     // ------------------------------------------------------------------
     // 分区表

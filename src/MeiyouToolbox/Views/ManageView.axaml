@@ -311,7 +311,7 @@
 
                     <!-- 擦除与格式化 -->
                     <arc:Card Title="擦除与格式化"
-                              Description="擦除需 9008；格式化需系统或 Recovery 的 root。">
+                              Description="擦除需 9008；格式化需 Fastboot。">
                         <StackPanel Spacing="8" Margin="0,6,0,0">
 
                             <Border Padding="9,7" CornerRadius="6"
@@ -325,23 +325,22 @@
                                 </StackPanel>
                             </Border>
 
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                <ComboBox Grid.Column="0"
-                                          ItemsSource="{Binding FileSystems}"
-                                          SelectedItem="{Binding SelectedFileSystem}"
-                                          HorizontalAlignment="Stretch"
-                                          PlaceholderText="选择文件系统">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:FileSystemOption">
-                                            <TextBlock Text="{Binding Title}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                                <arc:Input IsLabelVisible="False" Grid.Column="1" Width="150"
-                                           Text="{Binding VolumeLabel}"
-                                           Placeholder="卷标（可空）"
-                                           Height="32" />
-                            </Grid>
+                            <ComboBox ItemsSource="{Binding FileSystems}"
+                                      SelectedItem="{Binding SelectedFileSystem}"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="选择文件系统">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:FileSystemOption">
+                                        <TextBlock Text="{Binding Title}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <TextBlock Text="{Binding SelectedFileSystemDescription}"
+                                       FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                       Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                                       TextWrapping="Wrap"
+                                       MaxLines="3" />
 
                             <!-- 危险操作确认 -->
                             <Border Padding="9,7" CornerRadius="6"
@@ -356,7 +355,7 @@
                                                    Foreground="{arc:ArcDesignTokenResource Foreground}" />
                                     </StackPanel>
 
-                                    <TextBlock Text="永久清除所选分区的内容。选错（如 boot、persist）可能导致无法开机或丢失指纹校准。"
+                                    <TextBlock Text="永久清除所选分区的内容。system / boot / persist 这类分区已在代码里硬拒绝，避免毁掉设备。"
                                                FontSize="{arc:ArcDesignTokenResource TypeXS}"
                                                Foreground="{arc:ArcDesignTokenResource TextMuted}"
                                                TextWrapping="Wrap" />
@@ -388,7 +387,7 @@
                                 </arc:Button>
                             </Grid>
 
-                            <TextBlock Text="格式化要求该分区当前未被挂载。"
+                            <TextBlock Text="格式化由主机端 mke2fs / make_f2fs 生成镜像再整块刷入，因此需要 Fastboot 模式。"
                                        FontSize="{arc:ArcDesignTokenResource TypeXS}"
                                        Foreground="{arc:ArcDesignTokenResource TextMuted}"
                                        TextWrapping="Wrap" />

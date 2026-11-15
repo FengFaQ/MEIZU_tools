@@ -52,7 +52,7 @@
                 <ScrollViewer Grid.Column="0">
                     <StackPanel Spacing="10">
 
-                        <arc:Card Title="机型">
+                        <arc:Card Title="机型与解锁资料">
                             <StackPanel Spacing="6" Margin="0,4,0,0">
                                 <ComboBox ItemsSource="{Binding Profiles}"
                                           SelectedItem="{Binding SelectedProfile}"
@@ -70,6 +70,22 @@
                                            TextWrapping="Wrap"
                                            MaxLines="3"
                                            TextTrimming="CharacterEllipsis" />
+
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <TextBlock Grid.Column="0" Text="{Binding CredentialStatus}"
+                                               VerticalAlignment="Center"
+                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <arc:Button Grid.Column="1" Variant="Secondary"
+                                                Command="{Binding OpenCredentialEditorCommand}"
+                                                ToolTip.Tip="导入这台机型的解锁码 / 授权码 / mzkv">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <lucide:LucideIcon Kind="Import" Size="12" />
+                                            <TextBlock Text="导入资料" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                        </StackPanel>
+                                    </arc:Button>
+                                </Grid>
                             </StackPanel>
                         </arc:Card>
 
@@ -112,62 +128,6 @@
                                             <lucide:LucideIcon Kind="Lock" Size="14" />
                                             <TextBlock Text="上锁" FontSize="{arc:ArcDesignTokenResource TypeSM}" />
                                         </StackPanel>
-                                    </arc:Button>
-                                </Grid>
-                            </StackPanel>
-                        </arc:Card>
-
-                        <arc:Card Title="解锁资料">
-                            <StackPanel Spacing="6" Margin="0,4,0,0">
-
-                                <TextBlock Text="{Binding ImportCodesHint}"
-                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                           Foreground="{arc:ArcDesignTokenResource TextMuted}"
-                                           TextWrapping="Wrap"
-                                           MaxLines="2"
-                                           TextTrimming="CharacterEllipsis" />
-
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
-                                    <arc:Input IsLabelVisible="False" Grid.Column="0"
-                                               Placeholder="粘贴 512 字符解锁码"
-                                               Text="{Binding UnlockCodeInput}"
-                                               Height="30"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}" />
-                                    <arc:Button Grid.Column="1" Variant="Secondary"
-                                                Command="{Binding SaveUnlockCodeCommand}">
-                                        <TextBlock Text="导入" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
-                                    </arc:Button>
-                                </Grid>
-
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
-                                    <arc:Input IsLabelVisible="False" Grid.Column="0"
-                                               Placeholder="粘贴 512 字符授权码"
-                                               Text="{Binding AuthCodeInput}"
-                                               Height="30"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}" />
-                                    <arc:Button Grid.Column="1" Variant="Secondary"
-                                                Command="{Binding SaveAuthCodeCommand}">
-                                        <TextBlock Text="导入" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
-                                    </arc:Button>
-                                </Grid>
-
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="5">
-                                    <TextBlock Grid.Column="0" Text="{Binding CredentialStatus}"
-                                               VerticalAlignment="Center"
-                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
-                                               TextTrimming="CharacterEllipsis" />
-                                    <arc:Button Grid.Column="1" Variant="Secondary"
-                                                Click="OnPickMzkv"
-                                                ToolTip.Tip="选择解锁用 mzkv 镜像">
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <lucide:LucideIcon Kind="Import" Size="12" />
-                                            <TextBlock Text="mzkv" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
-                                        </StackPanel>
-                                    </arc:Button>
-                                    <arc:Button Grid.Column="2" Variant="Ghost"
-                                                Command="{Binding ClearCredentialsCommand}">
-                                        <TextBlock Text="清空" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
                                     </arc:Button>
                                 </Grid>
                             </StackPanel>

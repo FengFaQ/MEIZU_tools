@@ -1,5 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:arc="https://github.com/AIDotNet/TKCode.Arc"
              xmlns:conv="using:MeiyouToolbox.Converters"
              x:Class="MeiyouToolbox.App"
              RequestedThemeVariant="Light">
@@ -16,6 +17,17 @@
     -->
     <Application.Styles>
         <FluentTheme />
+
+        <!--
+            全局把 Arc 按钮降到 Small 档（高 36px，默认 Medium 是 44px）。
+            原因：刷机页三列并排后，Medium 档按钮太宽，镜像刷写卡与扩展功能卡的按钮
+            会互相挤压甚至溢出卡片边界。Small 档在同样的列宽里能放下更多按钮，
+            且与卡片内 TypeXS 的说明文字比例更协调。
+            个别需要强调的地方仍可单独写 Size="Medium" 覆盖。
+        -->
+        <Style Selector="arc|Button">
+            <Setter Property="Size" Value="Small" />
+        </Style>
     </Application.Styles>
 
     <!--

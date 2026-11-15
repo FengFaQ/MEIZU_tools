@@ -134,6 +134,9 @@
 
             <!-- Fastboot 刷写页：同样从「选择刷写通路」打开 -->
             <views:FastbootFlashOverlay DataContext="{Binding Fastboot}" />
+
+            <!-- 解锁资料子窗口：从刷机页的「导入资料」打开 -->
+            <views:CredentialEditorOverlay DataContext="{Binding Flash}" />
         </Grid>
     </DockPanel>
 </UserControl>

@@ -114,17 +114,34 @@
 
                         <!-- 镜像列表 -->
                         <arc:Card Grid.Row="1" Title="待刷镜像">
-                            <Grid RowDefinitions="Auto,*" RowSpacing="6" Margin="0,4,0,0">
+                            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="6" Margin="0,4,0,0">
 
-                                <TextBlock Grid.Row="0" Text="{Binding ImageStatus}"
-                                           FontSize="{arc:ArcDesignTokenResource TypeXS}"
-                                           Foreground="{arc:ArcDesignTokenResource TextMuted}"
-                                           TextTrimming="CharacterEllipsis" />
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="5">
+                                    <TextBlock Grid.Column="0" Text="{Binding ImageStatus}"
+                                               VerticalAlignment="Center"
+                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                               Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                                               TextTrimming="CharacterEllipsis" />
 
+                                    <!-- 全选 / 全不选：镜像常常 20+ 个，逐个点太慢 -->
+                                    <arc:Button Grid.Column="1" Variant="Ghost"
+                                                Command="{Binding SelectAllCommand}"
+                                                ToolTip.Tip="勾选全部镜像">
+                                        <TextBlock Text="全选" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    </arc:Button>
+                                    <arc:Button Grid.Column="2" Variant="Ghost"
+                                                Command="{Binding SelectNoneCommand}"
+                                                ToolTip.Tip="取消所有勾选">
+                                        <TextBlock Text="全不选" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    </arc:Button>
+                                </Grid>
+
+                                <!-- 镜像多于一屏时靠这个滚动条翻；高度不再撑开整页 -->
                                 <Border Grid.Row="1"
                                         BorderThickness="1"
                                         BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
-                                        CornerRadius="6">
+                                        CornerRadius="6"
+                                        MaxHeight="260">
                                     <Grid RowDefinitions="28,*">
                                         <Grid Grid.Row="0" ColumnDefinitions="34,*,1.2*,74"
                                               Background="{arc:ArcDesignTokenResource SurfaceMuted}">
@@ -146,7 +163,9 @@
                                         <ListBox Grid.Row="1"
                                                  ItemsSource="{Binding Images}"
                                                  Background="Transparent"
-                                                 BorderThickness="0">
+                                                 BorderThickness="0"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:FastbootImageRow">
                                                     <Grid ColumnDefinitions="34,*,1.2*,74" Height="26">
@@ -174,16 +193,29 @@
                             </Grid>
                         </arc:Card>
 
-                        <!-- 刷写 -->
-                        <arc:Button Grid.Row="2" Variant="Primary"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Center"
-                                    Command="{Binding FlashCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <lucide:LucideIcon Kind="Play" Size="14" />
-                                <TextBlock Text="开始刷写" FontSize="{arc:ArcDesignTokenResource TypeSM}" />
-                            </StackPanel>
-                        </arc:Button>
+                        <!-- 刷写 / 擦除 -->
+                        <Grid Grid.Row="2" ColumnDefinitions="2*,8,*">
+                            <arc:Button Grid.Column="0" Variant="Primary"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding FlashCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <lucide:LucideIcon Kind="Play" Size="14" />
+                                    <TextBlock Text="开始刷写" FontSize="{arc:ArcDesignTokenResource TypeSM}" />
+                                </StackPanel>
+                            </arc:Button>
+
+                            <arc:Button Grid.Column="2" Variant="Danger"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding EraseSelectedCommand}"
+                                        ToolTip.Tip="对勾选的分区执行 fastboot erase，不需要镜像文件">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <lucide:LucideIcon Kind="Eraser" Size="14" />
+                                    <TextBlock Text="擦除选中" FontSize="{arc:ArcDesignTokenResource TypeSM}" />
+                                </StackPanel>
+                            </arc:Button>
+                        </Grid>
                     </Grid>
 
                     <!-- 右列 -->
@@ -230,6 +262,28 @@
                                 <arc:Checkbox Content="解包时校验大小"
                                               IsChecked="{Binding VerifySize}"
                                               FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+
+                                <Separator Background="{arc:ArcDesignTokenResource BorderSubtle}" Height="1" />
+
+                                <!-- 槽位：A/B 机型才有效 -->
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding CurrentSlot, StringFormat='当前槽位 {0}', TargetNullValue='槽位未知'}"
+                                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                               Foreground="{arc:ArcDesignTokenResource TextSecondary}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <arc:Button Grid.Column="1" Variant="Ghost"
+                                                Command="{Binding ReadSlotCommand}"
+                                                ToolTip.Tip="读 fastboot getvar current-slot">
+                                        <TextBlock Text="读" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    </arc:Button>
+                                    <arc:Button Grid.Column="2" Variant="Secondary"
+                                                Command="{Binding OpenSlotPickerCommand}"
+                                                ToolTip.Tip="激活另一个槽位后重启">
+                                        <TextBlock Text="切换" FontSize="{arc:ArcDesignTokenResource TypeXS}" />
+                                    </arc:Button>
+                                </Grid>
                             </StackPanel>
                         </arc:Card>
 
@@ -284,5 +338,59 @@
                 </Grid>
             </Grid>
         </Border>
+
+        <!-- 槽位选择弹窗 -->
+        <Grid IsVisible="{Binding IsSlotPickerOpen}" Background="#66000000">
+            <Border Width="340" CornerRadius="12" Padding="20"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{arc:ArcDesignTokenResource Surface}"
+                    BorderThickness="1"
+                    BorderBrush="{arc:ArcDesignTokenResource BorderSubtle}"
+                    BoxShadow="0 12 40 0 #40000000">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                            <lucide:LucideIcon Kind="Layers" Size="16" VerticalAlignment="Center" />
+                            <TextBlock Text="切换到哪个槽位"
+                                       FontSize="{arc:ArcDesignTokenResource TypeLG}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{arc:ArcDesignTokenResource Foreground}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                        <arc:Button Grid.Column="1" Variant="Ghost"
+                                    Command="{Binding CloseSlotPickerCommand}">
+                            <lucide:LucideIcon Kind="X" Size="14" />
+                        </arc:Button>
+                    </Grid>
+
+                    <TextBlock Text="切换后设备会从另一个槽位启动。如果该槽位里的系统是坏的，切过去就会开不了机。"
+                               FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                               Foreground="{arc:ArcDesignTokenResource TextMuted}"
+                               TextWrapping="Wrap" />
+
+                    <ItemsControl ItemsSource="{Binding SlotChoices}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FastbootSlotChoice">
+                                <arc:Button Variant="Secondary"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Left"
+                                            Margin="0,0,0,6"
+                                            Command="{Binding $parent[ItemsControl].((vm:FastbootFlashViewModel)DataContext).SetActiveSlotCommand}"
+                                            CommandParameter="{Binding Value}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontWeight="Medium"
+                                                   FontSize="{arc:ArcDesignTokenResource TypeSM}" />
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="{arc:ArcDesignTokenResource TypeXS}"
+                                                   Foreground="{arc:ArcDesignTokenResource TextMuted}" />
+                                    </StackPanel>
+                                </arc:Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

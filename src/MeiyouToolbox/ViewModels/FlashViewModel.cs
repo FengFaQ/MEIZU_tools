@@ -33,6 +33,7 @@ public sealed partial class FlashViewModel : ObservableObject
     private readonly TaskCompleteViewModel _taskComplete;
     private readonly EdlFlashViewModel _edl;
     private readonly FastbootFlashViewModel _fastboot;
+    private readonly IUnlockPlanner _planner;
     private readonly IAppLogger _logger;
 
     private CancellationTokenSource? _cts;
@@ -47,6 +48,7 @@ public sealed partial class FlashViewModel : ObservableObject
         TaskCompleteViewModel taskComplete,
         EdlFlashViewModel edl,
         FastbootFlashViewModel fastboot,
+        IUnlockPlanner planner,
         IAppLogger logger)
     {
         _catalog = catalog;
@@ -58,6 +60,7 @@ public sealed partial class FlashViewModel : ObservableObject
         _taskComplete = taskComplete;
         _edl = edl;
         _fastboot = fastboot;
+        _planner = planner;
         _logger = logger;
 
         Profiles = new ObservableCollection<DeviceProfile>(_catalog.All);
@@ -84,6 +87,7 @@ public sealed partial class FlashViewModel : ObservableObject
         _taskComplete = null!;
         _edl = null!;
         _fastboot = null!;
+        _planner = null!;
         _logger = null!;
 
         Profiles = [];
@@ -103,7 +107,8 @@ public sealed partial class FlashViewModel : ObservableObject
         nameof(ImportCodesHint),
         nameof(IsOdmDevice),
         nameof(SelectedProduct),
-        nameof(UnlockRequiresModeText))]
+        nameof(UnlockRequiresModeText),
+        nameof(CanUnlockNow))]
     [NotifyCanExecuteChangedFor(
         nameof(UnlockCommand),
         nameof(LockCommand),
@@ -218,7 +223,8 @@ public sealed partial class FlashViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 解锁时需要的连接状态。由解锁方案决定，界面上直接告诉用户"点下去会自动切到 X"。
+    /// 解锁时需要的连接状态。由解锁方案 + 已导入资料共同决定，界面上直接告诉用户
+    /// "点下去会自动切到 X"；两阶段的机型（Fastboot → 9008）会完整写出来。
     /// </summary>
     public string UnlockRequiresModeText
     {
@@ -229,17 +235,36 @@ public sealed partial class FlashViewModel : ObservableObject
                 return string.Empty;
             }
 
-            return p.UnlockPlan switch
+            if (_planner is null || _credentials is null)
             {
-                UnlockPlan.AuthPrivate when _credentials is not null && _credentials.Load(p.Product).HasAuthCode
-                    => "会自动切到 9008 模式",
-                UnlockPlan.AuthPrivate => "会自动切到 Fastboot 模式",
-                UnlockPlan.AuthMzkvSig or UnlockPlan.AuthMzkvNoSig => "会自动切到 9008 模式",
-                UnlockPlan.Odm1 => "会自动切到 9008 模式",
-                UnlockPlan.Odm2 => "会自动切到 Fastboot 模式",
-                UnlockPlan.OdmNote8 => "会自动切到 Fastboot 模式",
-                _ => "该机型未声明解锁方案",
-            };
+                return string.Empty;
+            }
+
+            var plan = _planner.Plan(p, _credentials.Load(p.Product));
+
+            if (plan.BlockedReason is { } blocked)
+            {
+                return blocked;
+            }
+
+            var steps = plan.Steps.Count;
+            return steps > 1
+                ? $"解锁分 {steps} 步：{plan.Summary}"
+                : $"会自动切到 {plan.EntryMode.Display()}：{plan.Summary}";
+        }
+    }
+
+    /// <summary>解锁按钮是否可点：机型已选、未在忙、且资料齐备（计划能成立）。</summary>
+    public bool CanUnlockNow
+    {
+        get
+        {
+            if (IsBusy || SelectedProfile is not { } p || _planner is null || _credentials is null)
+            {
+                return false;
+            }
+
+            return _planner.Plan(p, _credentials.Load(p.Product)).CanRun;
         }
     }
 
@@ -258,6 +283,7 @@ public sealed partial class FlashViewModel : ObservableObject
     // ------------------------------------------------------------------
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUnlockNow))]
     [NotifyCanExecuteChangedFor(
         nameof(CancelCommand),
         nameof(UnlockCommand),
@@ -378,6 +404,25 @@ public sealed partial class FlashViewModel : ObservableObject
     // 命令：资料导入
     // ------------------------------------------------------------------
 
+    /// <summary>解锁资料子窗口是否展开。</summary>
+    [ObservableProperty]
+    private bool _isCredentialEditorOpen;
+
+    [RelayCommand]
+    private void OpenCredentialEditor()
+    {
+        if (SelectedProfile is null)
+        {
+            Report("请先选择机型", failed: true);
+            return;
+        }
+
+        IsCredentialEditorOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseCredentialEditor() => IsCredentialEditorOpen = false;
+
     [RelayCommand]
     private void SaveUnlockCode() => SaveCode(UnlockCodeInput, isAuthCode: false);
 
@@ -438,9 +483,16 @@ public sealed partial class FlashViewModel : ObservableObject
     // 命令：解锁 / 上锁（自动切模式）
     // ------------------------------------------------------------------
 
-    private bool CanRunUnlock() => !IsBusy && SelectedProfile is not null;
-
-    [RelayCommand(CanExecute = nameof(CanRunUnlock))]
+    /// <summary>
+    /// 解锁：按 <see cref="IUnlockPlanner"/> 算出的阶段逐步执行。
+    /// <para>
+    /// 关键点是**每一步自己切状态**：auth-private 机型可能是
+    /// 「Fastboot 写解锁码 → 9008 写 private」两阶段，中间设备会重启，
+    /// 所以每个阶段前都重新 <see cref="IDeviceModeService.EnsureModeAsync"/> 一次。
+    /// 这对应参考实现 <c>L778-L809</c>（Fastboot 段）与 <c>L819-L856</c>（9008 段）。
+    /// </para>
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUnlockNow))]
     private async Task UnlockAsync()
     {
         if (SelectedProfile is not { } profile)
@@ -448,39 +500,71 @@ public sealed partial class FlashViewModel : ObservableObject
             return;
         }
 
-        var targetMode = RequiredModeForUnlock(profile);
+        var credentials = _credentials.Load(profile.Product);
+        var plan = _planner.Plan(profile, credentials);
+
+        if (plan.BlockedReason is { } blocked)
+        {
+            Report(blocked, failed: true);
+            _logger.Warn($"解锁被阻止：{blocked}");
+            return;
+        }
+
         var taskName = $"解锁 Bootloader · {profile.Model}";
+        var stepIndex = 0;
 
         var ok = await RunAsync(taskName, async token =>
         {
-            // 第一步：自动把设备切到解锁所需的状态。
-            Report($"正在把设备切换到 {targetMode.Display()}…");
-
-            var navigation = await _modes.EnsureModeAsync(
-                targetMode, EdlPort, ResolveStorage(profile), CreateFlashProgress(), token)
-                .ConfigureAwait(true);
-
-            if (!navigation.Success)
+            foreach (var step in plan.Steps)
             {
-                return FlashResult.Fail(navigation.Message);
+                stepIndex++;
+                var prefix = plan.Steps.Count > 1 ? $"[{stepIndex}/{plan.Steps.Count}] " : string.Empty;
+
+                Report($"{prefix}正在把设备切换到 {step.Mode.Display()}…");
+
+                var navigation = await _modes.EnsureModeAsync(
+                    step.Mode, EdlPort, ResolveStorage(profile), CreateFlashProgress(), token)
+                    .ConfigureAwait(true);
+
+                if (!navigation.Success)
+                {
+                    return FlashResult.Fail(navigation.Message);
+                }
+
+                // 切模式后端口可能变了，重新读一次再下发。
+                await ReReadPortAsync(navigation.Mode).ConfigureAwait(true);
+
+                Report($"{prefix}{step.Label}");
+
+                var result = await _flash.UnlockBootloaderAsync(
+                    profile, credentials, navigation.Mode, EdlPort,
+                    ResolveStorage(profile), CreateFlashProgress(), token).ConfigureAwait(true);
+
+                if (!result.Success)
+                {
+                    return result;
+                }
+
+                // 阶段之间设备可能需要重新枚举，给一点缓冲。
+                if (stepIndex < plan.Steps.Count)
+                {
+                    await System.Threading.Tasks.Task
+                        .Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(true);
+                }
             }
 
-            // 切模式后端口可能变了，重新读一次。
-            await ReReadPortAsync(navigation.Mode).ConfigureAwait(true);
-
-            // 第二步：完全移植原工具箱的解锁流程。
-            var credentials = _credentials.Load(profile.Product);
-            var result = await _flash.UnlockBootloaderAsync(
-                profile, credentials, navigation.Mode, EdlPort,
-                ResolveStorage(profile), CreateFlashProgress(), token).ConfigureAwait(true);
-
-            return result;
+            return FlashResult.Ok(plan.Steps.Count > 1
+                ? $"已完成 {plan.Steps.Count} 个阶段的解锁"
+                : "解锁完成");
         }).ConfigureAwait(true);
 
         ShowTaskComplete(taskName, ok);
     }
 
-    [RelayCommand(CanExecute = nameof(CanRunUnlock))]
+    /// <summary>上锁只看「机型已选 + 未在忙」；上锁不需要任何解锁资料。</summary>
+    private bool CanRunLock() => !IsBusy && SelectedProfile is not null;
+
+    [RelayCommand(CanExecute = nameof(CanRunLock))]
     private async Task LockAsync()
     {
         if (SelectedProfile is not { } profile)
@@ -512,29 +596,6 @@ public sealed partial class FlashViewModel : ObservableObject
         }).ConfigureAwait(true);
 
         ShowTaskComplete(taskName, ok);
-    }
-
-    /// <summary>解锁方案 → 需要的连接状态。见参考实现 `goto UNLOCKBL-%blplan%` 的分支条件。</summary>
-    private ConnectionMode RequiredModeForUnlock(DeviceProfile profile)
-    {
-        // meizu20inf 不支持 9008，原工具箱在 L299 硬编码走 Fastboot。
-        if (string.Equals(profile.Product, "meizu20inf", StringComparison.OrdinalIgnoreCase))
-        {
-            return ConnectionMode.Fastboot;
-        }
-
-        return profile.UnlockPlan switch
-        {
-            UnlockPlan.AuthPrivate =>
-                _credentials.Load(profile.Product).HasAuthCode
-                    ? ConnectionMode.QcEdl
-                    : ConnectionMode.Fastboot,
-            UnlockPlan.AuthMzkvSig or UnlockPlan.AuthMzkvNoSig => ConnectionMode.QcEdl,
-            UnlockPlan.Odm1 => ConnectionMode.QcEdl,
-            UnlockPlan.Odm2 => ConnectionMode.Fastboot,
-            UnlockPlan.OdmNote8 => ConnectionMode.Fastboot,
-            _ => ConnectionMode.None,
-        };
     }
 
     // ------------------------------------------------------------------
@@ -876,6 +937,39 @@ public sealed partial class FlashViewModel : ObservableObject
 
         // 换机型后清掉旧的引导文件，让它按新机型重新推导。
         ProgrammerPath = null;
+
+        // 换了机型就把该机型已保存的资料回填到输入框 —— 用户不必每次重新粘贴。
+        LoadCredentialsIntoInputs(value);
+    }
+
+    /// <summary>
+    /// 把已保存的解锁码/授权码读进输入框。
+    /// <para>
+    /// 参考实现是每次解锁时从 <c>res\%product%\bak\blunlockcode.txt</c> 现读；
+    /// 我们多走一步，把内容显示出来，用户能直观看到"这台的资料已经在了"。
+    /// </para>
+    /// </summary>
+    private void LoadCredentialsIntoInputs(DeviceProfile? profile)
+    {
+        if (profile is null)
+        {
+            UnlockCodeInput = null;
+            AuthCodeInput = null;
+            return;
+        }
+
+        try
+        {
+            var stored = _credentials.Load(profile.Product);
+            UnlockCodeInput = stored.UnlockCode;
+            AuthCodeInput = stored.AuthCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn($"读取 {profile.Product} 的解锁资料失败：{ex.Message}");
+            UnlockCodeInput = null;
+            AuthCodeInput = null;
+        }
     }
 
     // ------------------------------------------------------------------
@@ -1054,6 +1148,11 @@ public sealed partial class FlashViewModel : ObservableObject
         CredentialStatus = items.Count == 0
             ? "该机型不需要授权资料"
             : string.Join("    ", items);
+
+        // 资料变了，解锁按钮的可用性与提示文案都要跟着变。
+        OnPropertyChanged(nameof(UnlockRequiresModeText));
+        OnPropertyChanged(nameof(CanUnlockNow));
+        UnlockCommand.NotifyCanExecuteChanged();
     }
 
     private void RefreshToolState()
