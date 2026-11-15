@@ -53,6 +53,19 @@ public sealed partial class MainViewModel : ObservableObject
             _logger.Info($"按环境变量以 {initial} 页启动");
         }
 
+        // 同上，用于直接打开遮罩页做布局截图：MEIYOU_START_OVERLAY=edl|fastboot
+        var startOverlay = Environment.GetEnvironmentVariable("MEIYOU_START_OVERLAY");
+        if (string.Equals(startOverlay, "edl", StringComparison.OrdinalIgnoreCase))
+        {
+            Edl.IsOpen = true;
+            _logger.Info("按环境变量打开 9008 刷写页");
+        }
+        else if (string.Equals(startOverlay, "fastboot", StringComparison.OrdinalIgnoreCase))
+        {
+            Fastboot.IsOpen = true;
+            _logger.Info("按环境变量打开 Fastboot 刷写页");
+        }
+
         _logger.Info("MainViewModel 已创建，默认页面：概览");
     }
 

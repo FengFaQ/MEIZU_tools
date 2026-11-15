@@ -73,8 +73,25 @@ public sealed class DeviceProfile
 
     public EdlPlan EdlPlan { get; init; } = EdlPlan.Key;
 
-    /// <summary>下拉框显示文本。</summary>
-    public string DisplayName => string.IsNullOrWhiteSpace(Model) ? Product : $"{Model}（{Product}）";
+    /// <summary>下拉框显示文本。型号里已经含代号时不重复追加。</summary>
+    public string DisplayName
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Model))
+            {
+                return Product;
+            }
+
+            // 机型表里有人把代号写进 model 列（如「魅族 15（M15）」），
+            // 这时再拼一次代号就会变成「魅族 15（M15）（M15）」。
+            // 只认「（代号）」这种括号写法，避免误伤「魅族 16S」这类本来含代号的型号名。
+            var alreadyHasCode = Model.Contains($"（{Product}）", StringComparison.OrdinalIgnoreCase)
+                                 || Model.Contains($"({Product})", StringComparison.OrdinalIgnoreCase);
+
+            return alreadyHasCode ? Model : $"{Model}（{Product}）";
+        }
+    }
 
     /// <summary>解锁码只在 auth-private 方案下用得到。</summary>
     public bool NeedsUnlockCode => UnlockPlan == UnlockPlan.AuthPrivate;
