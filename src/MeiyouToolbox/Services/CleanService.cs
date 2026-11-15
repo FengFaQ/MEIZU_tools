@@ -211,7 +211,7 @@ public sealed class CleanService : ICleanService
                 var result = await _runner.RunAsync(
                     fastboot,
                     ["format:" + type, name],
-                    workDirectory: workDir,
+                    workingDirectory: workDir,
                     timeout: EraseTimeout,
                     cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -231,7 +231,7 @@ public sealed class CleanService : ICleanService
             var erase = await _runner.RunAsync(
                 fastboot,
                 ["erase", name],
-                workDirectory: workDir,
+                workingDirectory: workDir,
                 timeout: EraseTimeout,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 

@@ -535,3 +535,57 @@ $env:MEIYOU_START_OVERLAY = "edl"     # edl / fastboot，直接打开遮罩页
 `gpttool -p raw.bin -f convert:gptmain -o gpt_main<N>.bin` 转格式。
 `print:qcedl_rawprogramxml` 能直接输出完整 `<program .../>`（连
 `start_sector="NUM_DISK_SECTORS-33."` 都算好了），只留 `physical_partition_number=""` 要自己填 LUN。
+
+### 55. TKCode.Arc 不提供 TextBox / ComboBox / CheckBox / ListBox / ProgressBar 主题
+`ArcBaseTheme.StyledTypes` 只覆盖 9 个宿主类型：`ScrollViewer`、`ScrollBar`、`ItemsControl`、
+`PathIcon`、`TextSelectionHandle`、`OverlayPopupHost`、`PopupRoot`、`EmbeddableControlRoot`、`Window`。
+其余内置控件**没有任何 ControlTheme**，在界面上**完全不渲染且不报错**（截图里就是空白一片）。
+`ArcBaseTheme.TryRegister` 会检测应用是否已有该类型的默认 ControlTheme，有就让位 —— 所以在
+`App.axaml` 里必须显式写 `<FluentTheme />`。Avalonia 12 把 FluentTheme 拆成独立包，
+csproj 还要加 `<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />`，
+否则报 `AVLN2000 Unable to resolve type FluentTheme`。
+文本输入优先用 `arc:Input`（`: FieldTextBox : TextBox`，保留 TextBox 全部能力），
+它的水印属性是 **`Placeholder` 不是 `Watermark`**；`IsLabelVisible` 默认 true 会占一行标签高度，
+紧凑布局要显式设 `False`。
+
+### 56. Arc 的 `ControlSize` 只有 Small / Medium / Large
+对应高度 36 / 44 / 50。`arc:Button` 默认 Medium，在多列紧凑布局里会挤到重叠。
+全局降档在 `App.axaml` 写：
+```xml
+<Style Selector="arc|Button">
+    <Setter Property="Size" Value="Small" />
+</Style>
+```
+
+### 57. `Border` 只能有一个子元素
+把遮罩弹窗和主内容并排写成 `Border` 的两个子元素，XAML 编译期不报错但运行时只显示第一个
+（或直接抛异常）。全窗口遮罩应写成 `<Grid>` 的两个子元素，各自一个 `Border`。
+
+### 58. `fastboot getvar` 的输出在 stderr
+`fastboot getvar current-slot` 正常输出 `current-slot: a`，但它是**写到 stderr 的**。
+用 `ProcessResult.StandardOutput` 匹配永远拿不到，必须用 `Combined`（stdout+stderr）。
+
+### 59. `fastboot format` 需要同目录的 mke2fs / make_f2fs
+`fastboot format:ext4` / `format:f2fs` 是**主机端**生成镜像再整块刷入，它会在自己所在目录找
+`mke2fs.exe`、`make_f2fs.exe`、`mke2fs.conf`，缺任何一个就失败。
+旧版 platform-tools（r35 及更早）**不带这些文件**，必须从 r37+ 的包里补进来。
+
+### 60. 安卓能启动的文件系统只有 ext4 与 f2fs
+`system/core/fastboot/fs.cpp` 的 `generators[]` 只有这两项，其它类型直接
+`die("Formatting is not supported for file system with type '%s'.")`。
+NTFS 在 AOSP **完全不存在**（vold 无 Ntfs.cpp、GKI 各版本 gki_defconfig 里 NTFS 符号全 NONE）；
+exFAT / FAT32 只用于外置 SD 卡（vold `PublicVolume`，`>32GiB` 选 exfat 否则 vfat）。
+安卓系统分区本身不是"格式化"出来的，是整块镜像 flash；`fastboot -w` 只擦不建
+（`WipeTask::Run()` 只做 `Erase`），靠 `fs_mgr` 的 `formattable` 标志开机自动重建。
+`persist` 存传感器校准与 DRM key，格式化后**永久丢失且不可修复**。
+
+### 61. `IAppLogger` 的 `LineWritten` 事件里不能再无条件调 `Snapshot()`
+`LineWritten` 在 `Write` 的**锁外**触发（否则回调里读 buffer 会死锁），
+但回调若又调 `Snapshot()` 拿全量列表，高频写日志时是 O(n²)。
+界面只追加单行即可；只有对话框打开时才拉一次 `Snapshot()`。
+
+### 62. `AvaloniaResource` 不会把文件复制到输出目录
+`<AvaloniaResource Include="Assets\x.csv" />` 只把它嵌进程序集（`avares://` 可取），
+**磁盘上没有这个文件**。要在运行时按路径读，必须同时加
+`<None Include="Assets\x.csv" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />`；
+更稳的是代码里再做一层 `AssetLoader.Open` 兜底。

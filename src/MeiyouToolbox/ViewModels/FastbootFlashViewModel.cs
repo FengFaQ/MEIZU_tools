@@ -570,7 +570,7 @@ public sealed partial class FastbootFlashViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.Warn($"读取槽位失败：{ex.Message}");
-            Report($"读取槽位失败：{ex.Message}", failed: true);
+            Report($"读取槽位失败：{ex.Message}");
         }
     }
 

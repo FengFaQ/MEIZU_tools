@@ -557,14 +557,14 @@ public sealed class FlashService : IFlashService
 
         return profile.UnlockPlan switch
         {
-            UnlockPlan.AuthPrivate => await UnlockPrivateAsync(
+            Models.UnlockPlan.AuthPrivate => await UnlockPrivateAsync(
                 profile, credentials, mode, port, memory, progress, cancellationToken).ConfigureAwait(false),
-            UnlockPlan.AuthMzkvSig or UnlockPlan.AuthMzkvNoSig => await UnlockMzkvAsync(
+            Models.UnlockPlan.AuthMzkvSig or Models.UnlockPlan.AuthMzkvNoSig => await UnlockMzkvAsync(
                 profile, credentials, port, memory, progress, cancellationToken).ConfigureAwait(false),
-            UnlockPlan.Odm1 => await UnlockOdm1Async(
+            Models.UnlockPlan.Odm1 => await UnlockOdm1Async(
                 profile, mode, port, memory, progress, cancellationToken).ConfigureAwait(false),
-            UnlockPlan.Odm2 => await UnlockOdm2Async(progress, cancellationToken).ConfigureAwait(false),
-            UnlockPlan.OdmNote8 => await UnlockOdmNote8Async(
+            Models.UnlockPlan.Odm2 => await UnlockOdm2Async(progress, cancellationToken).ConfigureAwait(false),
+            Models.UnlockPlan.OdmNote8 => await UnlockOdmNote8Async(
                 profile, credentials, mode, port, memory, progress, cancellationToken).ConfigureAwait(false),
             _ => FlashResult.Fail(
                 $"机型 {profile.Product} 没有可用的解锁方案，请先在机型表里补全配置"),
