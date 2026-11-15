@@ -14,10 +14,12 @@
           "Avalonia.Themes.Fluent": "12.1.6",
           "CommunityToolkit.Mvvm": "8.4.0",
           "Microsoft.Extensions.DependencyInjection": "10.0.0",
+          "SharpCompress": "0.44.0",
           "TKCode.Arc": "1.1.0",
           "TKCode.Arc.Blocks": "1.1.0",
           "TKCode.Arc.Fonts": "1.1.0",
-          "TKCode.Arc.Icons.Lucide": "1.1.0"
+          "TKCode.Arc.Icons.Lucide": "1.1.0",
+          "ZstdSharp.Port": "0.8.7"
         },
         "runtime": {
           "MeiyouToolbox.dll": {}
@@ -328,6 +330,15 @@
           }
         }
       },
+      "SharpCompress/0.44.0": {
+        "runtime": {
+          "lib/net10.0/SharpCompress.dll": {
+            "assemblyVersion": "0.44.0.0",
+            "fileVersion": "0.44.0.0",
+            "localPath": "SharpCompress.dll"
+          }
+        }
+      },
       "SkiaSharp/3.119.4": {
         "dependencies": {
           "SkiaSharp.NativeAssets.Win32": "3.119.4"
@@ -516,6 +527,15 @@
             "localPath": "Tmds.DBus.Protocol.dll"
           }
         }
+      },
+      "ZstdSharp.Port/0.8.7": {
+        "runtime": {
+          "lib/net9.0/ZstdSharp.dll": {
+            "assemblyVersion": "0.8.7.0",
+            "fileVersion": "0.8.7.0",
+            "localPath": "ZstdSharp.dll"
+          }
+        }
       }
     }
   },
@@ -672,6 +692,13 @@
       "path": "onigwrap/1.0.11",
       "hashPath": "onigwrap.1.0.11.nupkg.sha512"
     },
+    "SharpCompress/0.44.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-F/RQBm9CpcwhUC5QRikueQPhGq6MUtShJM/Pzzb0optV7Kl3vhfdM9V8U1HmQ9d5JHEaFxt1Znl1jvmV6l7U6Q==",
+      "path": "sharpcompress/0.44.0",
+      "hashPath": "sharpcompress.0.44.0.nupkg.sha512"
+    },
     "SkiaSharp/3.119.4": {
       "type": "package",
       "serviceable": true,
@@ -776,6 +803,13 @@
       "sha512": "sha512-11YMr7FnAbL83bQmVxlhbIKHvSLxjO81D12Ej0QMSGXMDTxNA9MTOa4MQxx43nv5el/efuPHwzyrj6a5ha2gug==",
       "path": "tmds.dbus.protocol/0.94.1",
       "hashPath": "tmds.dbus.protocol.0.94.1.nupkg.sha512"
+    },
+    "ZstdSharp.Port/0.8.7": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+4VpxvzEKaHpfTjsLRMhQHx6brqGBkIA+fjUM3wUW8ZoWpPFAeKrO2Nf4uZDeBjjzNDNxSRvLQH4b3S9Ku4JJQ==",
+      "path": "zstdsharp.port/0.8.7",
+      "hashPath": "zstdsharp.port.0.8.7.nupkg.sha512"
     }
   }
 }

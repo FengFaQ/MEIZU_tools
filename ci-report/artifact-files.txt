@@ -30,15 +30,16 @@ libonigwrap.dll	541184
 libSkiaSharp.dll	11628896
 libSkiaSharp.pdb	84033536
 Markdig.dll	501760
-MeiyouToolbox.deps.json	28537
-MeiyouToolbox.dll	996352
+MeiyouToolbox.deps.json	29738
+MeiyouToolbox.dll	1031168
 MeiyouToolbox.exe	255488
-MeiyouToolbox.pdb	200152
+MeiyouToolbox.pdb	207272
 MeiyouToolbox.runtimeconfig.json	487
 MicroCom.Runtime.dll	15360
 Microsoft.Extensions.DependencyInjection.Abstractions.dll	66312
 Microsoft.Extensions.DependencyInjection.dll	96008
 Onigwrap.dll	12800
+SharpCompress.dll	1531904
 SkiaSharp.dll	489824
 StreamMark.Avalonia.dll	451584
 StreamMark.Core.dll	247296
@@ -53,6 +54,7 @@ TKCode.Arc.Fonts.dll	774656
 TKCode.Arc.Foundation.dll	67584
 TKCode.Arc.Icons.Lucide.dll	68608
 Tmds.DBus.Protocol.dll	232960
+ZstdSharp.dll	397312
 Tools\Android\bootctl	19832
 Tools\Android\busybox	1885888
 Tools\Android\misc_tofastbootd_2.img	8192
