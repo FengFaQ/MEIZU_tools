@@ -227,6 +227,9 @@ C:\Users\Administrator\Documents\dsh\MEIZU_tools\   ← 唯一本地根目录
       单分区回读、QCN 备份与恢复
 - [x] **管理页**（commit `c4b1e7b`）：槽位查看与切换（adb / fastboot / 9008 三通路）、
       分区表列举、9008 擦除分区、adb 下格式化（fat32/ntfs/exfat/ext4）
+- [x] **应用图标**：`Assets\app.ico`（16/24/32/48/64/128/256 七档）+ `Assets\app.png`
+      （256 档，供 `Window.Icon`）。`<ApplicationIcon>` 管 exe，`Window.Icon` 管窗口，
+      **两条通路都要设**，只设一条会出现"exe 换了图标但窗口还是空白方块"
 
 ### 待办
 1. `tools\` 目录与 adb/fastboot 自动准备

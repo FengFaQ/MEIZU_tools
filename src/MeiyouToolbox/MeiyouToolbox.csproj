@@ -12,6 +12,9 @@
         <RootNamespace>MeiyouToolbox</RootNamespace>
         <Version>1.0.0</Version>
         <ApplicationManifest>app.manifest</ApplicationManifest>
+        <!-- exe 在资源管理器/任务栏显示的图标。多尺寸（16~256）已内嵌，
+             系统会按 DPI 自动挑合适的那一档 -->
+        <ApplicationIcon>Assets\app.ico</ApplicationIcon>
 
         <!-- ==== 目录结构：让运行目录保持简洁 ====
              约定（发布后）：
@@ -49,5 +52,10 @@
     <ItemGroup>
         <!-- 机型表：运行时由 DeviceProfileCatalog 读取，必须随程序打包 -->
         <AvaloniaResource Include="Assets\devices.csv" />
+        <!-- 窗口图标：Window.Icon 走 Avalonia 资源系统，和上面的 ApplicationIcon 是两条通路，
+             缺一不可（只设 ApplicationIcon 的话窗口左上角仍是空白方块）。
+             .ico 给 exe 用，.png 给 Window.Icon 用 —— Avalonia 读 PNG 最稳。 -->
+        <AvaloniaResource Include="Assets\app.ico" />
+        <AvaloniaResource Include="Assets\app.png" />
     </ItemGroup>
 </Project>

@@ -390,3 +390,25 @@ $bad  = $text.Contains('娓') -or $text.Contains('妲') -or $text.Contains('鍒'
 ```powershell
 $env:SSH_ASKPASS = "...\askpass.cmd"; $env:SSH_ASKPASS_REQUIRE = "force"; $env:DISPLAY = "dsh"
 ```
+
+### 38. 应用图标要设两条通路，缺一不可
+| 通路 | 设置位置 | 管什么 |
+|---|---|---|
+| `<ApplicationIcon>Assets\app.ico</ApplicationIcon>` | csproj `PropertyGroup` | exe 在资源管理器 / 任务栏 |
+| `Icon="/Assets/app.png"` + `<AvaloniaResource Include="Assets\app.png" />` | xaml `Window` + csproj `ItemGroup` | 窗口左上角 |
+
+只设第一条 → **窗口图标仍是空白方块**。只设第二条 → exe 图标是默认的。
+`.ico` 用于 exe（多尺寸内嵌，系统按 DPI 自动选档）；`Window.Icon` 用 `.png`，
+Avalonia 读 PNG 最稳，不必让它去解 ICO 容器。
+
+### 39. 生成 ICO 用 Pillow 原生写入器，别手写
+手写「PNG-only ICO 容器」在本机验证能读，但 MSBuild 嵌入 PE 资源时兼容性没保证。
+用 `Image.save(format="ICO", sizes=[...])`：Pillow 会自己决定每档用 BMP(DIB) 还是 PNG 条目
+（小尺寸 BMP、256 PNG），这是 Windows 各版本兼容性最好的组合。
+
+### 40. 素材 PNG 裁剪要看 alpha 阈值，别信 `getbbox()` 的原始结果
+`alpha.getbbox()` 返回 `(0,143,917,868)` 时左边界是 0，看起来内容贴边了 ——
+实际是几个 alpha 值 1~8 的**不可见杂散像素**。
+先 `alpha.point(lambda v: 255 if v > 8 else 0)` 再 `getbbox()`，
+真实边界是 `(114,144,911,867)`，四边留白才均匀。
+另外裁完要**补成正方形**（内容居中、四周留 6% 呼吸空间），否则图标在方形槽位里会变形或偏心。

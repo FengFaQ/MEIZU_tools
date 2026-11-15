@@ -10,6 +10,7 @@
         MinWidth="960"
         MinHeight="600"
         Background="White"
+        Icon="/Assets/app.png"
         WindowStartupLocation="CenterScreen">
     <!-- 顶栏、侧栏与自定义窗口按钮都在 MainView 里绘制，
          因此这里用普通 Window（无系统边框样式），标题栏由我们自己实现。 -->
