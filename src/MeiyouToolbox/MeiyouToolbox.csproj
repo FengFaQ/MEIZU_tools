@@ -84,8 +84,16 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- 机型表：运行时由 DeviceProfileCatalog 读取，必须随程序打包 -->
+        <!-- 机型表：运行时由 DeviceProfileCatalog 读取，必须随程序打包。
+             两种打包方式都要：
+               1. AvaloniaResource 把内容嵌进程序集（单文件场景的兜底）
+               2. None + CopyToOutputDirectory 让它以真实文件出现在 Assets\ 下
+             DeviceProfileCatalog 走的是磁盘读取，只做第 1 条的话运行时找不到文件，
+             机型下拉框会是空的（这个坑在 CI 产物里实测踩过）。 -->
         <AvaloniaResource Include="Assets\devices.csv" />
+        <None Include="Assets\devices.csv"
+              CopyToOutputDirectory="PreserveNewest"
+              CopyToPublishDirectory="PreserveNewest" />
         <!-- 窗口图标：Window.Icon 走 Avalonia 资源系统，和上面的 ApplicationIcon 是两条通路，
              缺一不可（只设 ApplicationIcon 的话窗口左上角仍是空白方块）。
              .ico 给 exe 用，.png 给 Window.Icon 用 —— Avalonia 读 PNG 最稳。 -->

@@ -56,9 +56,16 @@ public sealed class DeviceProfileCatalog : IDeviceProfileCatalog
             break;
         }
 
+        // 磁盘上没有就退回程序集内嵌的那份（AvaloniaResource 已嵌入）。
+        // 用户误删 Assets\devices.csv 时机型表仍然可用。
         if (_all.Count == 0)
         {
-            _logger?.Warn($"机型表未找到或为空，刷机页将要求手动选择机型。已尝试: {string.Join(" | ", csvPaths)}");
+            LoadFromEmbedded();
+        }
+
+        if (_all.Count == 0)
+        {
+            _logger?.Warn($"机型表未找到或为空，刷机页将要求手动选择机型。已尝试: {string.Join(" | ", csvPaths)} 以及程序集内嵌资源");
         }
         else
         {
@@ -105,6 +112,38 @@ public sealed class DeviceProfileCatalog : IDeviceProfileCatalog
             return;
         }
 
+        ParseLines(lines);
+    }
+
+    /// <summary>磁盘上的机型表缺失时，从程序集内嵌的 Avalonia 资源读一份。</summary>
+    private void LoadFromEmbedded()
+    {
+        try
+        {
+            var uri = new Uri("avares://MeiyouToolbox/Assets/devices.csv");
+            if (!Avalonia.Platform.AssetLoader.Exists(uri))
+            {
+                return;
+            }
+
+            using var stream = Avalonia.Platform.AssetLoader.Open(uri);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            var text = reader.ReadToEnd();
+            var lines = text.Split('\n')
+                .Select(l => l.TrimEnd('\r'))
+                .ToArray();
+
+            ParseLines(lines);
+            _logger?.Info("机型表从程序集内嵌资源载入");
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error("读取内嵌机型表失败", ex);
+        }
+    }
+
+    private void ParseLines(IEnumerable<string> lines)
+    {
         var lineNumber = 0;
         foreach (var raw in lines)
         {
