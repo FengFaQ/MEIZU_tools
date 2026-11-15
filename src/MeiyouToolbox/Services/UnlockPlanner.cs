@@ -97,7 +97,7 @@ public sealed class UnlockPlanner : IUnlockPlanner
                 [
                     new UnlockStep(
                         ConnectionMode.QcEdl,
-                        "进 9008，备份 private 后写入解锁标记与解锁码"),
+                        "备份 private 后写入解锁标记与解锁码"),
                 ],
                 "9008（写 private 分区）");
         }
