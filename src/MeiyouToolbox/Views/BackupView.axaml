@@ -109,8 +109,8 @@
                     </ComboBox>
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBox Grid.Column="0" Text="{Binding TargetDirectory}"
-                                 Watermark="备份保存到哪个目录"
+                        <arc:Input IsLabelVisible="False" Grid.Column="0" Text="{Binding TargetDirectory}"
+                                 Placeholder="备份保存到哪个目录"
                                  Height="34" />
                         <arc:Button Grid.Column="1" Variant="Secondary"
                                     Click="OnPickDirectory">
@@ -122,8 +122,8 @@
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBox Grid.Column="0" Text="{Binding EdlPort}"
-                                 Watermark="9008 端口（留空自动检测）"
+                        <arc:Input IsLabelVisible="False" Grid.Column="0" Text="{Binding EdlPort}"
+                                 Placeholder="9008 端口（留空自动检测）"
                                  Height="34" />
                         <arc:Button Grid.Column="1" Variant="Secondary"
                                     Click="OnOpenTargetDirectory">
@@ -237,8 +237,8 @@
                       Description="把之前备份的 .qcn 写回设备。同样需要设备处于 DIAG 模式。">
                 <StackPanel Spacing="10" Margin="0,8,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBox Grid.Column="0" Text="{Binding QcnFilePath}"
-                                 Watermark="选择 .qcn 备份文件"
+                        <arc:Input IsLabelVisible="False" Grid.Column="0" Text="{Binding QcnFilePath}"
+                                 Placeholder="选择 .qcn 备份文件"
                                  Height="34" />
                         <arc:Button Grid.Column="1" Variant="Secondary" Click="OnPickQcnFile">
                             <StackPanel Orientation="Horizontal" Spacing="6">

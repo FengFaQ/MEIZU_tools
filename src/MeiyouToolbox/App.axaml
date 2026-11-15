@@ -4,6 +4,21 @@
              x:Class="MeiyouToolbox.App"
              RequestedThemeVariant="Light">
     <!--
+        基础控件主题：必须有。
+        TKCode.Arc 只为自己提供的控件（Card / Button / Input / Select …）注册 ControlTheme，
+        它的基础主题 ArcBaseTheme.StyledTypes 只包含
+          ScrollViewer / ScrollBar / ItemsControl / PathIcon / TextSelectionHandle /
+          OverlayPopupHost / PopupRoot / EmbeddableControlRoot / Window
+        这 9 个宿主类型。原生 TextBox / ComboBox / CheckBox / ListBox / ProgressBar
+        都不在其中 —— 不引入任何基础主题时，这些控件没有模板，在界面上完全不显示
+        （不报错，只是空着）。这里引入 FluentTheme 补上；
+        Arc 的基础主题检测到已有主题后会自动让位，不会和它抢那 9 个类型。
+    -->
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+
+    <!--
         只注册本程序自己的转换器。
         颜色/主题一律由 TKCode.Arc 在运行时注册的 Design Token 提供
         （{arc:ArcDesignTokenResource Foreground} 等），不自己拍一套画刷，

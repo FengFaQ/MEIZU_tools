@@ -66,8 +66,8 @@
                     </ComboBox>
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBox Grid.Column="0" Text="{Binding EdlPort}"
-                                 Watermark="9008 端口（留空自动检测）"
+                        <arc:Input IsLabelVisible="False" Grid.Column="0" Text="{Binding EdlPort}"
+                                 Placeholder="9008 端口（留空自动检测）"
                                  Height="34" />
                         <arc:Button Grid.Column="1" Variant="Secondary"
                                     Command="{Binding ReadPartitionsCommand}">
@@ -278,9 +278,9 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <TextBox Grid.Column="2" Width="170"
+                        <arc:Input IsLabelVisible="False" Grid.Column="2" Width="170"
                                  Text="{Binding VolumeLabel}"
-                                 Watermark="卷标（可空）"
+                                 Placeholder="卷标（可空）"
                                  Height="32" />
                     </Grid>
 
